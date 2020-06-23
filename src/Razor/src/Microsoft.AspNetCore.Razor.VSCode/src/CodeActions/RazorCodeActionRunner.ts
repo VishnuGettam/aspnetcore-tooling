@@ -17,12 +17,13 @@ export class RazorCodeActionRunner {
     ) {}
 
     public register() {
-        vscode.commands.registerCommand('razor/runCodeAction', (request: object) => this.runCodeAction(request), this);
+        vscode.commands.registerCommand('razor/runCodeAction', request => this.runCodeAction(request), this);
     }
 
     private async runCodeAction(request: any): Promise<boolean> {
         const response: CodeActionResolutionResponse = await this.serverClient.sendRequest('razor/resolveCodeAction', {Action: request.Action, Data: request.Data});
         let workspaceEdit: vscode.WorkspaceEdit;
+        this.logger.logAlways(`response ${JSON.stringify(response)}`);
         try {
             workspaceEdit = convertWorkspaceEditFromSerializable(response.edit);
         } catch (e) {
