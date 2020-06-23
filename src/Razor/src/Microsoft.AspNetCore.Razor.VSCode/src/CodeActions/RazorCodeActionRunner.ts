@@ -20,9 +20,8 @@ export class RazorCodeActionRunner {
         vscode.commands.registerCommand('razor/runCodeAction', (request: object) => this.runCodeAction(request), this);
     }
 
-    private async runCodeAction(request: any): Promise<boolean | string | {}> {
+    private async runCodeAction(request: any): Promise<boolean> {
         const response: CodeActionResolutionResponse = await this.serverClient.sendRequest('razor/resolveCodeAction', {Action: request.Action, Data: request.Data});
-        this.logger.logVerbose(`received from razor/resolveCodeAction: ${JSON.stringify(response)}`);
         let workspaceEdit: vscode.WorkspaceEdit;
         try {
             workspaceEdit = convertWorkspaceEditFromSerializable(response.edit);
