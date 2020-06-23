@@ -24,6 +24,7 @@ export class RazorCodeActionRunner {
     private async runCodeAction(request: CodeActionResolutionRequest): Promise<boolean> {
         const response: CodeActionResolutionResponse = await this.serverClient.sendRequest('razor/resolveCodeAction', {Action: request.Action, Data: request.Data});
         let workspaceEdit: vscode.WorkspaceEdit;
+        this.logger.logAlways(`response ${JSON.stringify(response)}`);
         try {
             workspaceEdit = convertWorkspaceEditFromSerializable(response.edit);
         } catch (error) {

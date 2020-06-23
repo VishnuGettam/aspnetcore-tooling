@@ -121,7 +121,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             {
                 new WorkspaceEditDocumentChange(new CreateFile() { Uri = codeBehindUri.ToString() })
             };
-            
+
             return new WorkspaceEdit()
             {
                 Changes = changes,
