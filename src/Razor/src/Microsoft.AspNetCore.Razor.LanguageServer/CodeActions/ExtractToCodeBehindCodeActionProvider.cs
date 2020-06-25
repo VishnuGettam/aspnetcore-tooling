@@ -26,7 +26,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             var change = new SourceChange(context.Location.AbsoluteIndex, length: 0, newText: string.Empty);
-            var node = context.Document.GetSyntaxTree().Root.LocateOwner(change);
+            var node = context.CodeDocument.GetSyntaxTree().Root.LocateOwner(change);
             if (node is null)
             {
                 return EmptyResult;
@@ -37,7 +37,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             {
                 return EmptyResult;
             }
-            
+
             if (!(node is RazorDirectiveSyntax directiveNode))
             {
                 return EmptyResult;
