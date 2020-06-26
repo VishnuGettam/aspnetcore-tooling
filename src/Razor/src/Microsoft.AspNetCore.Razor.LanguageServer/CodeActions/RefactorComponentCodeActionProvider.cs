@@ -13,20 +13,20 @@ using Microsoft.VisualStudio.Editor.Razor;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
     internal class RefactorComponentCodeActionProvider : RazorCodeActionProvider
     {
-        private readonly HtmlFactsService _htmlFactsService;
+        private readonly TagHelperFactsService _tagHelperFactsServce;
         private readonly ILogger _logger;
 
         public RefactorComponentCodeActionProvider(
-            HtmlFactsService htmlFactsService,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            TagHelperFactsService tagHelperFactsServce)
         {
-            if (htmlFactsService is null)
+            if (tagHelperFactsServce is null)
             {
-                throw new ArgumentNullException(nameof(loggerFactory));
+                throw new ArgumentNullException(nameof(tagHelperFactsServce));
             }
 
             if (loggerFactory is null)
@@ -34,7 +34,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _htmlFactsService = htmlFactsService;
+            _tagHelperFactsServce = tagHelperFactsServce;
             _logger = loggerFactory.CreateLogger<ExtractToCodeBehindCodeActionProvider>();
         }
 
@@ -67,10 +67,17 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
         private void AddComponentAccessFromTag(RazorCodeActionContext context, MarkupStartTagSyntax startTag, List<CommandOrCodeAction> container)
         {
             var tagName = startTag.Name.Content;
+            string parentTagName = null;
+            if (startTag.Parent.Parent is MarkupElementSyntax parentElement)
+            {
+                parentTagName = parentElement.StartTag.Name.Content;
+            }
+            var attributes = _tagHelperFactsServce.StringifyAttributes(startTag.Attributes);
+
             var matching = new Dictionary<string, TagHelperPair>();
             foreach (var tagHelper in context.DocumentSnapshot.Project.TagHelpers)
             {
-                if (tagHelper.TagMatchingRules.All(rule => rule.TagName != "*" && TagHelperMatchingConventions.SatisfiesTagName(tagName, rule)))
+                if (tagHelper.TagMatchingRules.All(rule => TagHelperMatchingConventions.SatisfiesRule(tagName, parentTagName, attributes, rule)))
                 {
                     matching.Add(tagHelper.Name, new TagHelperPair() { Short = tagHelper });
                 }
@@ -86,21 +93,49 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                     }
                 }
             }
-
             foreach (var tagHelperPair in matching.Values)
             {
+                var @namespace = tagHelperPair.Short.Name.Substring(0, tagHelperPair.Short.Name.LastIndexOf("."));
                 container.Add(new CommandOrCodeAction(new CodeAction()
                 {
-                    Title = $"Add using {tagHelperPair.Short.Name}",
+                    Title = $"@using {@namespace}",
                 }));
                 container.Add(new CommandOrCodeAction(new CodeAction()
                 {
-                    Title = $"Fully qualify {tagHelperPair.Short.Name}",
+                    Title = $"{tagHelperPair.Short.Name}",
+                    Edit = CreateRenameTagEdit(context, startTag, tagHelperPair.Short.Name),
                 }));
             }
         }
 
-        private class TagHelperPair
+        private static WorkspaceEdit CreateRenameTagEdit(RazorCodeActionContext context, MarkupStartTagSyntax startTag, string newTagName)
+        {
+            var changes = new List<TextEdit>
+            {
+                new TextEdit()
+                {
+                    Range = startTag.Name.GetRange(context.CodeDocument.Source),
+                    NewText = newTagName,
+                },
+            };
+            var endTag = ((MarkupElementSyntax)startTag.Parent).EndTag;
+            if (endTag != null)
+            {
+                changes.Add(new TextEdit()
+                {
+                    Range = endTag.Name.GetRange(context.CodeDocument.Source),
+                    NewText = newTagName,
+                });
+            }
+            return new WorkspaceEdit()
+            {
+                Changes = new Dictionary<Uri, IEnumerable<TextEdit>> {
+                    [context.Request.TextDocument.Uri] = changes,
+                }
+            };
+        }
+
+        private sealed class TagHelperPair
         {
             public TagHelperDescriptor Short = null;
             public TagHelperDescriptor FullyQualified = null;

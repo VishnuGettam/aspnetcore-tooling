@@ -19,7 +19,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 
         override public Task<CommandOrCodeActionContainer> ProvideAsync(RazorCodeActionContext context, CancellationToken cancellationToken)
         {
-            if (!FileKinds.IsComponent(context.Document.GetFileKind()))
+            if (!FileKinds.IsComponent(context.CodeDocument.GetFileKind()))
             {
                 return EmptyResult;
             }

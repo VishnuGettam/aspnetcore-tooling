@@ -1,28 +1,23 @@
 ﻿using System;
 using Microsoft.AspNetCore.Razor.Language;
+using Microsoft.CodeAnalysis.Razor.ProjectSystem;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    internal struct RazorCodeActionContext
+    struct RazorCodeActionContext
     {
-        public readonly CodeActionParams Request { get; }
-        public readonly RazorCodeDocument Document { get; }
-        public readonly SourceLocation Location { get; }
+        public readonly CodeActionParams Request;
+        public readonly DocumentSnapshot DocumentSnapshot;
+        public readonly RazorCodeDocument CodeDocument;
+        public readonly SourceLocation Location;
 
-        public RazorCodeActionContext(CodeActionParams request, RazorCodeDocument document, SourceLocation location)
+        public RazorCodeActionContext(CodeActionParams request, DocumentSnapshot documentSnapshot, RazorCodeDocument codeDocument, SourceLocation location)
         {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            if (document is null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
             Request = request;
-            Document = document;
+            DocumentSnapshot = documentSnapshot;
+            CodeDocument = codeDocument;
             Location = location;
         }
     }
