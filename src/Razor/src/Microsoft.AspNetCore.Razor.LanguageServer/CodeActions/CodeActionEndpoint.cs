@@ -12,9 +12,9 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    class CodeActionEndpoint : ICodeActionHandler
+    internal class CodeActionEndpoint : ICodeActionHandler
     {
         private readonly IEnumerable<RazorCodeActionProvider> _providers;
         private readonly ForegroundDispatcher _foregroundDispatcher;
@@ -117,7 +117,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 }
             }
 
-            return container;
+            return new CommandOrCodeActionContainer(container);
         }
 
         public void SetCapability(CodeActionCapability capability)

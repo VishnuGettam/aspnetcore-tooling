@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Razor.LanguageServer.Formatting;
 using Microsoft.AspNetCore.Razor.LanguageServer.Hover;
 using Microsoft.AspNetCore.Razor.LanguageServer.ProjectSystem;
 using Microsoft.AspNetCore.Razor.LanguageServer.Semantic;
-using Microsoft.AspNetCore.Razor.LanguageServer.Refactoring;
+using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
 using Microsoft.CodeAnalysis.Razor;
 using Microsoft.CodeAnalysis.Razor.Completion;
 using Microsoft.CodeAnalysis.Razor.ProjectSystem;
@@ -160,7 +160,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer
                         services.AddSingleton<RazorHoverInfoService, DefaultRazorHoverInfoService>();
                         services.AddSingleton<HtmlFactsService, DefaultHtmlFactsService>();
 
-                        // Refactoring
+                        // Code actions
                         services.AddSingleton<RazorCodeActionProvider, ExtractToCodeBehindCodeActionProvider>();
                         services.AddSingleton<RazorCodeActionResolver, ExtractToCodeBehindCodeActionResolver>();
                     }));

@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { RazorLanguageServerClient } from '../RazorLanguageServerClient';
 import { RazorLogger } from '../RazorLogger';
+import { CodeActionResolutionRequest } from '../RPC/CodeActionResolutionRequest';
 import { CodeActionResolutionResponse } from '../RPC/CodeActionResolutionResponse';
 import { convertWorkspaceEditFromSerializable } from '../RPC/SerializableWorkspaceEdit';
 
@@ -17,16 +18,16 @@ export class RazorCodeActionRunner {
     ) {}
 
     public register() {
-        vscode.commands.registerCommand('razor/runCodeAction', (request: object) => this.runCodeAction(request), this);
+        vscode.commands.registerCommand('razor/runCodeAction', (request: CodeActionResolutionRequest) => this.runCodeAction(request), this);
     }
 
-    private async runCodeAction(request: any): Promise<boolean> {
+    private async runCodeAction(request: CodeActionResolutionRequest): Promise<boolean> {
         const response: CodeActionResolutionResponse = await this.serverClient.sendRequest('razor/resolveCodeAction', {Action: request.Action, Data: request.Data});
         let workspaceEdit: vscode.WorkspaceEdit;
         try {
             workspaceEdit = convertWorkspaceEditFromSerializable(response.edit);
-        } catch (e) {
-            this.logger.logAlways(`caught error running code action: ${e}`);
+        } catch (error) {
+            this.logger.logError(`Unexpected error deserializing code action for ${request.Action}`, error);
             return Promise.resolve(false);
         }
         return vscode.workspace.applyEdit(workspaceEdit);

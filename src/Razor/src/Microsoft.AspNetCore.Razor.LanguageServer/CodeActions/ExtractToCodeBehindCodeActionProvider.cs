@@ -11,70 +11,65 @@ using Microsoft.CodeAnalysis;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Microsoft.AspNetCore.Razor.Language.Legacy;
-using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
     internal class ExtractToCodeBehindCodeActionProvider : RazorCodeActionProvider
     {
+        private static readonly Task<CommandOrCodeActionContainer> EmptyResult = Task.FromResult<CommandOrCodeActionContainer>(null);
+
         override public Task<CommandOrCodeActionContainer> ProvideAsync(RazorCodeActionContext context, CancellationToken cancellationToken)
         {
-            if (context.Document.IsUnsupported())
-            {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
-            }
-
             if (!FileKinds.IsComponent(context.Document.GetFileKind()))
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
             var change = new SourceChange(context.Location.AbsoluteIndex, length: 0, newText: string.Empty);
             var node = context.Document.GetSyntaxTree().Root.LocateOwner(change);
             if (node is null)
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
-            while (!(node is RazorDirectiveSyntax))
+            node = node.Ancestors().FirstOrDefault(n => n.Kind == SyntaxKind.RazorDirective);
+            if (node == null)
             {
-                node = node.Parent;
-                if (node == null)
-                {
-                    return Task.FromResult<CommandOrCodeActionContainer>(null);
-                }
+                return EmptyResult;
             }
-
-            if (!(node is RazorDirectiveSyntax))
+            
+            if (!(node is RazorDirectiveSyntax directiveNode))
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
-            var directiveNode = (RazorDirectiveSyntax)node;
 
+            // Make sure we've found a @code or @functions
             if (directiveNode.DirectiveDescriptor != ComponentCodeDirective.Directive && directiveNode.DirectiveDescriptor != FunctionsDirective.Directive)
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
+            // No code action if malformed
             if (node.GetDiagnostics().Any(d => d.Severity == RazorDiagnosticSeverity.Error))
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
             var cSharpCodeBlockNode = directiveNode.Body.DescendantNodes().FirstOrDefault(n => n is CSharpCodeBlockSyntax);
             if (cSharpCodeBlockNode is null)
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
-            if (cSharpCodeBlockNode.DescendantNodes().Any(n => n is MarkupBlockSyntax || n is CSharpTransitionSyntax || n is RazorCommentBlockSyntax))
+            if (HasUnsupportedChildren(cSharpCodeBlockNode))
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
+            // Do not provide code action if the cursor is inside the code block
             if (context.Location.AbsoluteIndex > cSharpCodeBlockNode.SpanStart)
             {
-                return Task.FromResult<CommandOrCodeActionContainer>(null);
+                return EmptyResult;
             }
 
             var actionParams = new ExtractToCodeBehindParams()
@@ -106,6 +101,11 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
             };
 
             return Task.FromResult((CommandOrCodeActionContainer)container);
+        }
+
+        private static bool HasUnsupportedChildren(Language.Syntax.SyntaxNode node)
+        {
+            return node.DescendantNodes().Any(n => n is MarkupBlockSyntax || n is CSharpTransitionSyntax || n is RazorCommentBlockSyntax);
         }
     }
 }

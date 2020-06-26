@@ -2,8 +2,8 @@
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer
 {
-    class RazorCodeActionResolutionResponse
+    internal class RazorCodeActionResolutionResponse
     {
-        public WorkspaceEdit Edit;
+        public WorkspaceEdit Edit { get; set; }
     }
 }

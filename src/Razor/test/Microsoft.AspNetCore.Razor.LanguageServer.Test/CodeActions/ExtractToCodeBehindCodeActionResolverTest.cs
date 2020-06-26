@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
-using Microsoft.AspNetCore.Razor.LanguageServer.Refactoring;
+using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
 using Microsoft.AspNetCore.Razor.LanguageServer.ProjectSystem;
 using Microsoft.AspNetCore.Razor.Test.Common;
 using Microsoft.CodeAnalysis.Razor.ProjectSystem;
@@ -13,7 +13,7 @@ using Newtonsoft.Json.Linq;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {
     public class ExtractToCodeBehindCodeActionResolverTest : LanguageServerTestBase
     {
@@ -96,7 +96,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
         public async Task Handle_ExtractCodeBlock()
         {
             // Arrange
-            var documentPath = "c:\\Test.razor";
+            var documentPath = "c:/Test.razor";
             var documentUri = new Uri(documentPath);
             var contents = "@page \"/test\"\n@code { private var x = 1; }";
             var codeDocument = CreateCodeDocument(contents);
@@ -132,7 +132,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
         public async Task Handle_ExtractFunctionsBlock()
         {
             // Arrange
-            var documentPath = "c:\\Test.razor";
+            var documentPath = "c:/Test.razor";
             var documentUri = new Uri(documentPath);
             var contents = "@page \"/test\"\n@functions { private var x = 1; }";
             var codeDocument = CreateCodeDocument(contents);
@@ -164,6 +164,43 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
             Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
         }
 
+        [Fact]
+        public async Task Handle_ExtractCodeBlockWithUsing()
+        {
+            // Arrange
+            var documentPath = "c:/Test.razor";
+            var documentUri = new Uri(documentPath);
+            var contents = "@page \"/test\"\n@using System.Diagnostics\n@code { private var x = 1; }";
+            var codeDocument = CreateCodeDocument(contents);
+
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument));
+            var data = JObject.FromObject(new ExtractToCodeBehindParams()
+            {
+                Uri = documentUri,
+                RemoveStart = 14 + 26,
+                ExtractStart = 20 + 26,
+                ExtractEnd = 41 + 26,
+                RemoveEnd = 41 + 26,
+            });
+
+            // Act
+            var workspaceEdit = await resolver.ResolveAsync(data, default);
+
+            // Assert
+            Assert.NotNull(workspaceEdit);
+            var documentChanges = workspaceEdit.Changes[documentUri];
+            workspaceEdit.Changes.Remove(documentUri);
+            Assert.Single(documentChanges);
+            Assert.Equal(14 + 26, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(41 + 26, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            var codeBehindChanges = workspaceEdit.Changes.Values.First();
+            Assert.Single(codeBehindChanges);
+            Assert.Contains("using System.Diagnostics", codeBehindChanges.First().NewText);
+            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
+            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
+            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+        }
+
         private static DocumentResolver CreateDocumentResolver(string documentPath, RazorCodeDocument codeDocument)
         {
             var sourceTextChars = new char[codeDocument.Source.Length];
@@ -181,7 +218,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
 
         private static RazorCodeDocument CreateCodeDocument(string text)
         {
-            var projectItem = new TestRazorProjectItem("c:\\Test.razor", "c:\\Test.razor", "Test.razor") { Content = text };
+            var projectItem = new TestRazorProjectItem("c:/Test.razor", "c:/Test.razor", "Test.razor") { Content = text };
             var projectEngine = RazorProjectEngine.Create(RazorConfiguration.Default, TestRazorProjectFileSystem.Empty, (builder) =>
             {
                 builder.SetRootNamespace("test.Pages");

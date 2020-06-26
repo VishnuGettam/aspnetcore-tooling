@@ -5,11 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    class CodeActionResolutionEndpoint : IRazorCodeActionResolutionHandler
+    internal class CodeActionResolutionEndpoint : IRazorCodeActionResolutionHandler
     {
-        private readonly Dictionary<string, RazorCodeActionResolver> _resolvers;
+        private readonly IReadOnlyDictionary<string, RazorCodeActionResolver> _resolvers;
         private readonly ILogger _logger;
 
         public CodeActionResolutionEndpoint(
@@ -26,17 +26,18 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _resolvers = new Dictionary<string, RazorCodeActionResolver>();
+            _logger = loggerFactory.CreateLogger<CodeActionResolutionEndpoint>();
+
+            var resolverMap = new Dictionary<string, RazorCodeActionResolver>();
             foreach (var resolver in resolvers)
             {
-                if (_resolvers.ContainsKey(resolver.Action))
+                if (resolverMap.ContainsKey(resolver.Action))
                 {
-                    Debug.Fail($"duplicate resolver action for {resolver.Action}");
+                    Debug.Fail($"Duplicate resolver action for {resolver.Action}.");
                 }
-                _resolvers[resolver.Action] = resolver;
+                resolverMap[resolver.Action] = resolver;
             }
-
-            _logger = loggerFactory.CreateLogger<CodeActionResolutionEndpoint>();
+            _resolvers = resolverMap;
         }
 
         public async Task<RazorCodeActionResolutionResponse> Handle(RazorCodeActionResolutionParams request, CancellationToken cancellationToken)
@@ -46,14 +47,16 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 throw new ArgumentNullException(nameof(request));
             }
 
-            _logger.LogDebug($"resolving action {request.Action} with data {request.Data}");
-            if (!_resolvers.ContainsKey(request.Action))
+            _logger.LogDebug($"Resolving action {request.Action} with data {request.Data}.");
+            _resolvers.TryGetValue(request.Action, out var resolver);
+
+            if (resolver is null)
             {
-                Debug.Fail($"no resolver registered for {request.Action}");
+                Debug.Fail($"No resolver registered for {request.Action}.");
                 return new RazorCodeActionResolutionResponse() { Edit = null };
             }
 
-            var edit = await _resolvers[request.Action].ResolveAsync(request.Data, cancellationToken);
+            var edit = await resolver.ResolveAsync(request.Data, cancellationToken);
             return new RazorCodeActionResolutionResponse() { Edit = edit };
         }
     }

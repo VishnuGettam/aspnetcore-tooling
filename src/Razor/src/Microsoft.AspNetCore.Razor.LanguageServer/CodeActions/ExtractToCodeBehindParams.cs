@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    class ExtractToCodeBehindParams
+    internal class ExtractToCodeBehindParams
     {
         public Uri Uri { get; set; }
         public int ExtractStart { get; set; }

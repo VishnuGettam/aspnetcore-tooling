@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
-using Microsoft.AspNetCore.Razor.LanguageServer.Refactoring;
+using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
 using Microsoft.AspNetCore.Razor.LanguageServer.ProjectSystem;
 using Microsoft.AspNetCore.Razor.Test.Common;
 using Microsoft.CodeAnalysis.Razor.ProjectSystem;
@@ -15,7 +15,7 @@ using System.Linq;
 using System.Threading;
 using System.Collections.Generic;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {
     public class CodeActionEndpointTest : LanguageServerTestBase
     {
@@ -135,7 +135,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
         }
 
         [Fact]
-        public async Task Handle_OneNullProvider()
+        public async Task Handle_OneNullReturningProvider()
         {
             // Arrange
             var documentPath = "C:/path/to/Page.razor";

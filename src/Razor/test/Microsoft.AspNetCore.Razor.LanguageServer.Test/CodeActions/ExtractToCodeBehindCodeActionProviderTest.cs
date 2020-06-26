@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Razor.Language;
-using Microsoft.AspNetCore.Razor.LanguageServer.Refactoring;
+using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
 using Microsoft.AspNetCore.Razor.LanguageServer.ProjectSystem;
 using Microsoft.AspNetCore.Razor.Test.Common;
 using Microsoft.CodeAnalysis.Razor.ProjectSystem;
@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Razor.Language.Components;
 using Microsoft.AspNetCore.Razor.Language.Extensions;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {
     public class ExtractToCodeBehindCodeActionProviderTest : LanguageServerTestBase
     {
@@ -27,32 +27,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
             var contents = "@page \"/test\"\n@code {}";
             var codeDocument = CreateCodeDocument(contents);
             codeDocument.SetFileKind(FileKinds.Legacy);
-
-            var request = new CodeActionParams()
-            {
-                TextDocument = new TextDocumentIdentifier(new Uri(documentPath)),
-                Range = new Range(),
-            };
-
-            var location = new SourceLocation(contents.IndexOf("code"), -1, -1);
-            var provider = new ExtractToCodeBehindCodeActionProvider();
-            var context = new RazorCodeActionContext(request, codeDocument, location);
-
-            // Act
-            var commandOrCodeActionContainer = await provider.ProvideAsync(context, default);
-
-            // Assert
-            Assert.Null(commandOrCodeActionContainer);
-        }
-
-        [Fact]
-        public async Task Handle_Unsupported()
-        {
-            // Arrange
-            var documentPath = "c:/Test.razor";
-            var contents = "@page \"/test\"\n@code {}";
-            var codeDocument = CreateCodeDocument(contents);
-            codeDocument.SetUnsupported();
 
             var request = new CodeActionParams()
             {
@@ -235,21 +209,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
             Assert.Equal(24, actionParams.ExtractStart);
             Assert.Equal(47, actionParams.ExtractEnd);
             Assert.Equal(47, actionParams.RemoveEnd);
-        }
-
-        private static DocumentResolver CreateDocumentResolver(string documentPath, RazorCodeDocument codeDocument)
-        {
-            var sourceTextChars = new char[codeDocument.Source.Length];
-            codeDocument.Source.CopyTo(0, sourceTextChars, 0, codeDocument.Source.Length);
-            var sourceText = SourceText.From(new string(sourceTextChars));
-            var documentSnapshot = Mock.Of<DocumentSnapshot>(document =>
-                document.GetGeneratedOutputAsync() == Task.FromResult(codeDocument) &&
-                document.GetTextAsync() == Task.FromResult(sourceText));
-            var documentResolver = new Mock<DocumentResolver>();
-            documentResolver
-                .Setup(resolver => resolver.TryResolveDocument(documentPath, out documentSnapshot))
-                .Returns(true);
-            return documentResolver.Object;
         }
 
         private static RazorCodeDocument CreateCodeDocument(string text)

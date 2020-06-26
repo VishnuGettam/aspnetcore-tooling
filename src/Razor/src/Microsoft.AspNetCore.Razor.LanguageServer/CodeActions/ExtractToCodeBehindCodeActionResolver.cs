@@ -17,7 +17,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 using CSharpSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
     internal class ExtractToCodeBehindCodeActionResolver : RazorCodeActionResolver
     {
@@ -25,6 +25,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
         private readonly DocumentResolver _documentResolver;
 
         public override string Action => Constants.ExtractToCodeBehindAction;
+
+        private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
 
         public ExtractToCodeBehindCodeActionResolver(
             ForegroundDispatcher foregroundDispatcher,
@@ -47,7 +49,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
         public override async Task<WorkspaceEdit> ResolveAsync(JObject data, CancellationToken cancellationToken)
         {
             var actionParams = data.ToObject<ExtractToCodeBehindParams>();
-            var path = Path.GetFullPath(actionParams.Uri.LocalPath);
+            var path = actionParams.Uri.GetAbsoluteOrUNCPath();
 
             var document = await Task.Factory.StartNew(() =>
             {
@@ -59,34 +61,19 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 return null;
             }
 
-            var text = await document.GetTextAsync();
-            if (text is null)
-            {
-                return null;
-            }
-
             var codeDocument = await document.GetGeneratedOutputAsync();
             if (codeDocument.IsUnsupported())
             {
                 return null;
             }
 
-            if (!FileKinds.IsComponent(codeDocument.GetFileKind()))
+            var codeDocumentFileKind = codeDocument.GetFileKind();
+            if (!FileKinds.IsComponent(codeDocumentFileKind))
             {
                 return null;
             }
 
-            var codeBehindPath = "";
-            var n = 0;
-            do
-            {
-                var identifier = n > 0 ? n.ToString() : "";  // Make it look nice
-                codeBehindPath = Path.Combine(
-                    Path.GetDirectoryName(path),
-                    $"{Path.GetFileNameWithoutExtension(path)}{identifier}{Path.GetExtension(path)}.cs");
-                n++;
-            } while (File.Exists(codeBehindPath));
-
+            var codeBehindPath = GenerateCodeBehindPath(path);
             var codeBehindUri = new UriBuilder()
             {
                 Scheme = Uri.UriSchemeFile,
@@ -94,9 +81,21 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 Host = string.Empty,
             }.Uri;
 
+            var text = await document.GetTextAsync();
+            if (text is null)
+            {
+                return null;
+            }
+
             var className = Path.GetFileNameWithoutExtension(path);
-            var contents = text.GetSubTextString(new CodeAnalysis.Text.TextSpan(actionParams.ExtractStart, actionParams.ExtractEnd - actionParams.ExtractStart));
-            var compilationUnit = GenerateCodeBehindClass(className, contents, codeDocument);
+            var codeBlockcontent = text.GetSubTextString(new CodeAnalysis.Text.TextSpan(actionParams.ExtractStart, actionParams.ExtractEnd - actionParams.ExtractStart));
+            var codeBehindContent = GenerateCodeBehindClass(className, codeBlockcontent, codeDocument);
+
+            var start = codeDocument.Source.Lines.GetLocation(actionParams.RemoveStart);
+            var end = codeDocument.Source.Lines.GetLocation(actionParams.RemoveEnd);
+            var removeRange = new Range(
+                new Position(start.LineIndex, start.CharacterIndex),
+                new Position(end.LineIndex, end.CharacterIndex));
 
             var changes = new Dictionary<Uri, IEnumerable<TextEdit>>
             {
@@ -105,15 +104,15 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                     new TextEdit()
                     {
                         NewText = "",
-                        Range = codeDocument.RangeFromIndices(actionParams.RemoveStart, actionParams.RemoveEnd)
+                        Range = removeRange,
                     }
                 },
                 [codeBehindUri] = new[]
                 {
                     new TextEdit()
                     {
-                        NewText = compilationUnit.NormalizeWhitespace().ToFullString(),
-                        Range = new Range(new Position(0, 0), new Position(0, 0))
+                        NewText = codeBehindContent,
+                        Range = StartOfDocumentRange,
                     }
                 }
             };
@@ -130,16 +129,30 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
             };
         }
 
-        private IEnumerable<string> FindUsings(RazorCodeDocument razorCodeDocument)
+        private static string GenerateCodeBehindPath(string path)
+        {
+            var n = 0;
+            string codeBehindPath;
+            do
+            {
+                var identifier = n > 0 ? n.ToString() : "";  // Make it look nice
+                codeBehindPath = Path.Combine(
+                    Path.GetDirectoryName(path),
+                    $"{Path.GetFileNameWithoutExtension(path)}{identifier}{Path.GetExtension(path)}.cs");
+                n++;
+            } while (File.Exists(codeBehindPath));
+            return codeBehindPath;
+        }
+
+        private static IEnumerable<string> FindUsings(RazorCodeDocument razorCodeDocument)
         {
             return razorCodeDocument
                 .GetDocumentIntermediateNode()
-                .FindDescendantNodes<IntermediateNode>()
-                .Where(n => n is UsingDirectiveIntermediateNode)
-                .Select(n => ((UsingDirectiveIntermediateNode)n).Content);
+                .FindDescendantNodes<UsingDirectiveIntermediateNode>()
+                .Select(n => n.Content);
         }
 
-        private CompilationUnitSyntax GenerateCodeBehindClass(string className, string contents, RazorCodeDocument razorCodeDocument)
+        private static string GenerateCodeBehindClass(string className, string contents, RazorCodeDocument razorCodeDocument)
         {
             var namespaceNode = (NamespaceDeclarationIntermediateNode)razorCodeDocument
                 .GetDocumentIntermediateNode()
@@ -157,12 +170,15 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
                 .NamespaceDeclaration(CSharpSyntaxFactory.ParseName(namespaceNode.Content))
                 .AddMembers(@class);
 
+            var usings = FindUsings(razorCodeDocument)
+                .Select(u => CSharpSyntaxFactory.UsingDirective(CSharpSyntaxFactory.ParseName(u)))
+                .ToArray();
             var compilationUnit = CSharpSyntaxFactory
                 .CompilationUnit()
-                .AddUsings(FindUsings(razorCodeDocument).Select(u => CSharpSyntaxFactory.UsingDirective(CSharpSyntaxFactory.ParseName(u))).ToArray())
+                .AddUsings(usings)
                 .AddMembers(@namespace);
 
-            return compilationUnit;
+            return compilationUnit.NormalizeWhitespace().ToFullString();
         }
     }
 }

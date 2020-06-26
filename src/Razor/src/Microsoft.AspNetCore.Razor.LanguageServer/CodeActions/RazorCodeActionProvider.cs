@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    abstract class RazorCodeActionProvider
+    internal abstract class RazorCodeActionProvider
     {
         public abstract Task<CommandOrCodeActionContainer> ProvideAsync(RazorCodeActionContext context, CancellationToken cancellationToken);
     }

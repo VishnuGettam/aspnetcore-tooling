@@ -2,14 +2,14 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Razor.LanguageServer.Refactoring;
+using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
 using Microsoft.AspNetCore.Razor.Test.Common;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Xunit;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
+namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {
     public class CodeActionResolutionEndpointTest : LanguageServerTestBase
     {
@@ -34,7 +34,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
         }
 
         [Fact]
-        public async Task Handle_ResolveMultipleA()
+        public async Task Handle_ResolveMultipleProviders_FirstMatches()
         {
             // Arrange
             var codeActionEndpoint = new CodeActionResolutionEndpoint(new RazorCodeActionResolver[] {
@@ -55,7 +55,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.Refactoring
         }
 
         [Fact]
-        public async Task Handle_ResolveMultipleB()
+        public async Task Handle_ResolveMultipleProviders_SecondMatches()
         {
             // Arrange
             var codeActionEndpoint = new CodeActionResolutionEndpoint(new RazorCodeActionResolver[] {
