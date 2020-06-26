@@ -38,7 +38,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             _documentResolver = documentResolver;
         }
 
-
         public override async Task<WorkspaceEdit> ResolveAsync(JObject data, CancellationToken cancellationToken)
         {
             var actionParams = data.ToObject<RefactorComponentCreateParams>();
