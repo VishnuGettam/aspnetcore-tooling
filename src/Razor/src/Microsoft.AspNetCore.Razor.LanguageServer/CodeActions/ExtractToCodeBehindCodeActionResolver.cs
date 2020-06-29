@@ -107,8 +107,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             var className = Path.GetFileNameWithoutExtension(path);
-            var codeBlockcontent = text.GetSubTextString(new CodeAnalysis.Text.TextSpan(actionParams.ExtractStart, actionParams.ExtractEnd - actionParams.ExtractStart));
-            var codeBehindContent = GenerateCodeBehindClass(className, codeBlockcontent, codeDocument);
+            var codeBlockContent = text.GetSubTextString(new CodeAnalysis.Text.TextSpan(actionParams.ExtractStart, actionParams.ExtractEnd - actionParams.ExtractStart));
+            var codeBehindContent = GenerateCodeBehindClass(className, codeBlockContent, codeDocument);
 
             var start = codeDocument.Source.Lines.GetLocation(actionParams.RemoveStart);
             var end = codeDocument.Source.Lines.GetLocation(actionParams.RemoveEnd);
@@ -116,34 +116,40 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 new Position(start.LineIndex, start.CharacterIndex),
                 new Position(end.LineIndex, end.CharacterIndex));
 
-            var changes = new Dictionary<Uri, IEnumerable<TextEdit>>
-            {
-                [actionParams.Uri] = new[]
-                {
-                    new TextEdit()
-                    {
-                        NewText = "",
-                        Range = removeRange,
-                    }
-                },
-                [codeBehindUri] = new[]
-                {
-                    new TextEdit()
-                    {
-                        NewText = codeBehindContent,
-                        Range = StartOfDocumentRange,
-                    }
-                }
-            };
+            var codeDocumentIdentifier = new VersionedTextDocumentIdentifier() { Uri = actionParams.Uri, Version = 0 };
+            var codeBehindDocumentIdentifier = new VersionedTextDocumentIdentifier() { Uri = codeBehindUri, Version = 0 };
 
             var documentChanges = new List<WorkspaceEditDocumentChange>
             {
-                new WorkspaceEditDocumentChange(new CreateFile() { Uri = codeBehindUri.ToString() })
+                new WorkspaceEditDocumentChange(new CreateFile() { Uri = codeBehindUri.ToString() }),
+                new WorkspaceEditDocumentChange(new TextDocumentEdit()
+                {
+                    TextDocument = codeDocumentIdentifier,
+                    Edits = new[]
+                    {
+                        new TextEdit()
+                        {
+                            NewText = "",
+                            Range = removeRange,
+                        }
+                    },               
+                }),
+                new WorkspaceEditDocumentChange(new TextDocumentEdit()
+                {
+                    TextDocument = codeBehindDocumentIdentifier,
+                    Edits  = new[]
+                    {
+                        new TextEdit()
+                        {
+                            NewText = codeBehindContent,
+                            Range = StartOfDocumentRange,
+                        }
+                    },
+                })
             };
             
             return new WorkspaceEdit()
             {
-                Changes = changes,
                 DocumentChanges = documentChanges,
             };
         }

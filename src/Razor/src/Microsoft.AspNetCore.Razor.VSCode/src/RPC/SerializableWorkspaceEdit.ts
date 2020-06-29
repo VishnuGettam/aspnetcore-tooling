@@ -6,11 +6,11 @@
 import * as vscode from 'vscode';
 import { SerializableCreateDocument } from './SerializableCreateDocument';
 import { SerializableDeleteDocument } from './SerializableDeleteDocument';
-import { convertRangeFromSerializable } from './SerializableRange';
 import { SerializableRenameDocument } from './SerializableRenameDocument';
-import { SerializableTextEdit } from './SerializableTextEdit';
+import { SerializableTextDocumentEdit } from './SerializableTextDocumentEdit';
+import { convertTextEditFromSerializable, SerializableTextEdit } from './SerializableTextEdit';
 
-type SerializableDocumentChange = SerializableCreateDocument | SerializableRenameDocument | SerializableDeleteDocument;
+type SerializableDocumentChange = SerializableCreateDocument | SerializableRenameDocument | SerializableDeleteDocument | SerializableTextDocumentEdit;
 
 export interface SerializableWorkspaceEdit {
     changes?: {[key: string]: Array<SerializableTextEdit>};
@@ -27,18 +27,19 @@ export function convertWorkspaceEditFromSerializable(data: SerializableWorkspace
                 workspaceEdit.renameFile(vscode.Uri.parse(documentChange.oldUri), vscode.Uri.parse(documentChange.newUri), documentChange.options);
             } else if (documentChange.kind === 'delete') {
                 workspaceEdit.deleteFile(vscode.Uri.parse(documentChange.uri), documentChange.options);
+            } else {
+                const changes = documentChange.edits.map(convertTextEditFromSerializable);
+                workspaceEdit.set(vscode.Uri.parse(documentChange.textDocument.uri), changes);
             }
         }
-    } else if (data.changes !== undefined) {
+    }
+    if (data.changes !== undefined) {
         for (const uri in data.changes) {
             if (!data.changes.hasOwnProperty(uri)) {
                 continue;
             }
-            const changes = data.changes[uri];
-            for (const change of changes) {
-                const range = convertRangeFromSerializable(change.range);
-                workspaceEdit.replace(vscode.Uri.parse(uri), range, change.newText);
-            }
+            const changes = data.changes[uri].map(convertTextEditFromSerializable);
+            workspaceEdit.set(vscode.Uri.parse(uri), changes);
         }
     }
     return workspaceEdit;
