@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Razor;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using CSharpSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -25,12 +26,16 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
     {
         private readonly ForegroundDispatcher _foregroundDispatcher;
         private readonly DocumentResolver _documentResolver;
+        private readonly FilePathNormalizer _filePathNormalizer;
+        private readonly ILogger _logger;
 
         private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
 
         public ExtractToCodeBehindCodeActionResolver(
             ForegroundDispatcher foregroundDispatcher,
-            DocumentResolver documentResolver)
+            DocumentResolver documentResolver,
+            FilePathNormalizer filePathNormalizer,
+            ILoggerFactory loggerFactory)
         {
             if (foregroundDispatcher is null)
             {
@@ -42,8 +47,20 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 throw new ArgumentNullException(nameof(documentResolver));
             }
 
+            if (filePathNormalizer is null)
+            {
+                throw new ArgumentNullException(nameof(filePathNormalizer));
+            }
+
+            if (loggerFactory is null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+
             _foregroundDispatcher = foregroundDispatcher;
             _documentResolver = documentResolver;
+            _filePathNormalizer = filePathNormalizer;
+            _logger = loggerFactory.CreateLogger<ExtractToCodeBehindCodeActionProvider>();
         }
 
         public override string Action => LanguageServerConstants.CodeActions.ExtractToCodeBehindAction;
@@ -51,7 +68,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         public override async Task<WorkspaceEdit> ResolveAsync(JObject data, CancellationToken cancellationToken)
         {
             var actionParams = data.ToObject<ExtractToCodeBehindParams>();
-            var path = actionParams.Uri.GetAbsoluteOrUNCPath();
+            var path = _filePathNormalizer.Normalize(actionParams.Uri.GetAbsoluteOrUNCPath());
 
             var document = await Task.Factory.StartNew(() =>
             {
@@ -138,7 +155,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         /// </summary>
         /// <param name="path">The origin file path.</param>
         /// <returns>A non-existent file path with the same base name and a codebehind extension.</returns>
-        private static string GenerateCodeBehindPath(string path)
+        private string GenerateCodeBehindPath(string path)
         {
             var n = 0;
             string codeBehindPath;
