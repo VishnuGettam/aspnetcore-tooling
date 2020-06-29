@@ -1,17 +1,12 @@
-<<<<<<< HEAD
-=======
-﻿using System.Collections.Generic;
->>>>>>> 37e5556eaa396241dea8f4062d9f290872a68c63
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using MediatR;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer
 {
-<<<<<<< HEAD
     internal class RazorCodeActionResolutionParams : IRequest<RazorCodeActionResolutionResponse>
-=======
-    class RazorCodeActionResolutionParams : IRequest<RazorCodeActionResolutionResponse>
->>>>>>> 37e5556eaa396241dea8f4062d9f290872a68c63
     {
         public string Action { get; set; }
         public JObject Data { get; set; }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.Language.Legacy;
 using Microsoft.AspNetCore.Razor.Language.Syntax;
+using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 using Microsoft.CodeAnalysis.Razor;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Editor.Razor;
@@ -160,7 +161,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 
             var resolutionParams = new RazorCodeActionResolutionParams()
             {
-                Action = Constants.RefactorComponentCreate,
+                Action = LanguageServerConstants.CodeActions.RefactorComponentCreate,
                 Data = data,
             };
             var serializedParams = JToken.FromObject(resolutionParams);

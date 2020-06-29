@@ -25,11 +25,14 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Common
 
         public const string RazorMapToDocumentRangesEndpoint = "razor/mapToDocumentRanges";
 
-<<<<<<< HEAD
         public const string SemanticTokensProviderName = "semanticTokensProvider";
 
-=======
->>>>>>> 37e5556eaa396241dea8f4062d9f290872a68c63
         public const string RazorCodeActionResolutionEndpoint = "razor/resolveCodeAction";
+
+        public static class CodeActions
+        {
+            public const string ExtractToCodeBehindAction = "ExtractToCodeBehind";
+            public const string RefactorComponentCreate = "CreateComponentFromTag";
+        }
     }
 }

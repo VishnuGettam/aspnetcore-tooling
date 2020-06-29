@@ -1,4 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using Moq;
+using Xunit;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
@@ -6,14 +12,8 @@ using Microsoft.AspNetCore.Razor.LanguageServer.ProjectSystem;
 using Microsoft.AspNetCore.Razor.Test.Common;
 using Microsoft.CodeAnalysis.Razor.ProjectSystem;
 using Microsoft.CodeAnalysis.Text;
-using Moq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using Xunit;
-using System;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
-using System.Linq;
-using System.Threading;
-using System.Collections.Generic;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {

@@ -15,8 +15,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
     class RefactorComponentCreateCodeActionResolver : RazorCodeActionResolver
     {
-        public override string Action => Constants.RefactorComponentCreate;
-
         private readonly ForegroundDispatcher _foregroundDispatcher;
         private readonly DocumentResolver _documentResolver;
 
@@ -37,6 +35,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             _foregroundDispatcher = foregroundDispatcher;
             _documentResolver = documentResolver;
         }
+
+        public override string Action => LanguageServerConstants.CodeActions.RefactorComponentCreate;
 
         public override async Task<WorkspaceEdit> ResolveAsync(JObject data, CancellationToken cancellationToken)
         {
