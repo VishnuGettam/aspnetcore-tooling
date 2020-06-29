@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,7 +17,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Razor;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-
 using CSharpSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
@@ -23,8 +25,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
     {
         private readonly ForegroundDispatcher _foregroundDispatcher;
         private readonly DocumentResolver _documentResolver;
-
-        public override string Action => Constants.ExtractToCodeBehindAction;
 
         private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
 
@@ -45,6 +45,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             _foregroundDispatcher = foregroundDispatcher;
             _documentResolver = documentResolver;
         }
+
+        public override string Action => LanguageServerConstants.CodeActions.ExtractToCodeBehindAction;
 
         public override async Task<WorkspaceEdit> ResolveAsync(JObject data, CancellationToken cancellationToken)
         {
@@ -129,6 +131,13 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             };
         }
 
+        /// <summary>
+        /// Generate a file path with adjacent to our input path that has the
+        /// correct codebehind extension, using numbers to differentiate from
+        /// any collisions.
+        /// </summary>
+        /// <param name="path">The origin file path.</param>
+        /// <returns>A non-existent file path with the same base name and a codebehind extension.</returns>
         private static string GenerateCodeBehindPath(string path)
         {
             var n = 0;
@@ -144,6 +153,12 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             return codeBehindPath;
         }
 
+        /// <summary>
+        /// Determine all explicit and implicit using statements in the code
+        /// document using the intermediate node.
+        /// </summary>
+        /// <param name="razorCodeDocument">The code document to analyze.</param>
+        /// <returns>An enumerable of the qualified namespaces.</returns>
         private static IEnumerable<string> FindUsings(RazorCodeDocument razorCodeDocument)
         {
             return razorCodeDocument
@@ -152,6 +167,15 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 .Select(n => n.Content);
         }
 
+        /// <summary>
+        /// Generate a complete C# compilation unit containing a partial class
+        /// with the given name, body contents, and the namespace and all
+        /// usings from the existing code document.
+        /// </summary>
+        /// <param name="className">Name of the resultant partial class.</param>
+        /// <param name="contents">Class body contents.</param>
+        /// <param name="razorCodeDocument">Existing code document we're extracting from.</param>
+        /// <returns></returns>
         private static string GenerateCodeBehindClass(string className, string contents, RazorCodeDocument razorCodeDocument)
         {
             var namespaceNode = (NamespaceDeclarationIntermediateNode)razorCodeDocument

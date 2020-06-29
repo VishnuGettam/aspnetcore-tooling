@@ -1,16 +1,19 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.Language.Components;
 using Microsoft.AspNetCore.Razor.Language.Extensions;
 using Microsoft.AspNetCore.Razor.Language.Syntax;
-using Microsoft.CodeAnalysis;
+using Microsoft.AspNetCore.Razor.Language.Legacy;
+using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using Microsoft.AspNetCore.Razor.Language.Legacy;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
@@ -84,7 +87,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 
             var resolutionParams = new RazorCodeActionResolutionParams()
             {
-                Action = Constants.ExtractToCodeBehindAction,  // Extract
+                Action = LanguageServerConstants.CodeActions.ExtractToCodeBehindAction,
                 Data = data,
             };
             var serializedParams = JToken.FromObject(resolutionParams);
