@@ -23,14 +23,16 @@ export class RazorCodeActionRunner {
 
     private async runCodeAction(request: CodeActionResolutionRequest): Promise<boolean> {
         const response: CodeActionResolutionResponse = await this.serverClient.sendRequest('razor/resolveCodeAction', {Action: request.Action, Data: request.Data});
-        let workspaceEdit: vscode.WorkspaceEdit;
+        let changesWorkspaceEdit: vscode.WorkspaceEdit;
+        let documentChangesWorkspaceEdit: vscode.WorkspaceEdit;
         this.logger.logAlways(`Received response ${JSON.stringify(response)}`);
         try {
-            workspaceEdit = convertWorkspaceEditFromSerializable(response.edit);
+            changesWorkspaceEdit = convertWorkspaceEditFromSerializable({changes: response.edit.changes});
+            documentChangesWorkspaceEdit = convertWorkspaceEditFromSerializable({documentChanges: response.edit.documentChanges});
         } catch (error) {
             this.logger.logError(`Unexpected error deserializing code action for ${request.Action}`, error);
             return Promise.resolve(false);
         }
-        return vscode.workspace.applyEdit(workspaceEdit);
+        return vscode.workspace.applyEdit(documentChangesWorkspaceEdit).then(() => vscode.workspace.applyEdit(changesWorkspaceEdit));
     }
 }
