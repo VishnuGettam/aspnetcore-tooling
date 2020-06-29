@@ -29,8 +29,7 @@ export function convertWorkspaceEditFromSerializable(data: SerializableWorkspace
                 workspaceEdit.deleteFile(vscode.Uri.parse(documentChange.uri), documentChange.options);
             }
         }
-    }
-    if (data.changes !== undefined) {
+    } else if (data.changes !== undefined) {
         for (const uri in data.changes) {
             if (!data.changes.hasOwnProperty(uri)) {
                 continue;
