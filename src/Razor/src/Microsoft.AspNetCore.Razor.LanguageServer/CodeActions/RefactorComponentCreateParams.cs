@@ -2,7 +2,7 @@
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    class RefactorComponentCreateParams
+    internal class RefactorComponentCreateParams
     {
         public Uri Uri { get; set; }
         public string Name { get; set; }

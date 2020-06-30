@@ -164,6 +164,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer
                         services.AddSingleton<RazorCodeActionProvider, RefactorComponentCodeActionProvider>();
                         services.AddSingleton<RazorCodeActionResolver, ExtractToCodeBehindCodeActionResolver>();
                         services.AddSingleton<RazorCodeActionResolver, RefactorComponentCreateCodeActionResolver>();
+                        services.AddSingleton<RazorCodeActionResolver, RefactorComponentUsingCodeActionResolver>();
                     }));
 
             try

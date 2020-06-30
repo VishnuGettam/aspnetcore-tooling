@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.Language.Legacy;
 using Microsoft.AspNetCore.Razor.Language.Syntax;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Razor;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Editor.Razor;
@@ -19,15 +20,22 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
     internal class RefactorComponentCodeActionProvider : RazorCodeActionProvider
     {
         private readonly TagHelperFactsService _tagHelperFactsServce;
+        private readonly FilePathNormalizer _filePathNormalizer;
         private readonly ILogger _logger;
 
         public RefactorComponentCodeActionProvider(
-            ILoggerFactory loggerFactory,
-            TagHelperFactsService tagHelperFactsServce)
+            TagHelperFactsService tagHelperFactsServce,
+            FilePathNormalizer filePathNormalizer,
+            ILoggerFactory loggerFactory)
         {
             if (tagHelperFactsServce is null)
             {
                 throw new ArgumentNullException(nameof(tagHelperFactsServce));
+            }
+
+            if (filePathNormalizer is null)
+            {
+                throw new ArgumentNullException(nameof(filePathNormalizer));
             }
 
             if (loggerFactory is null)
@@ -35,6 +43,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
+            _filePathNormalizer = filePathNormalizer;
             _tagHelperFactsServce = tagHelperFactsServce;
             _logger = loggerFactory.CreateLogger<ExtractToCodeBehindCodeActionProvider>();
         }
@@ -63,6 +72,39 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             return Task.FromResult(new CommandOrCodeActionContainer(container));
+        }
+
+        private void AddCreateComponentFromTag(RazorCodeActionContext context, MarkupStartTagSyntax startTag, List<CommandOrCodeAction> container)
+        {
+            var path = _filePathNormalizer.Normalize(context.Request.TextDocument.Uri.GetAbsoluteOrUNCPath());
+            var newComponentPath = Path.Combine(Path.GetDirectoryName(path), $"{startTag.Name.Content}.razor");
+            if (File.Exists(newComponentPath))
+            {
+                return;
+            }
+
+            var actionParams = new RefactorComponentCreateParams()
+            {
+                Uri = context.Request.TextDocument.Uri,
+                Name = startTag.Name.Content,
+                Where = newComponentPath,
+            };
+            var data = JObject.FromObject(actionParams);
+
+            var resolutionParams = new RazorCodeActionResolutionParams()
+            {
+                Action = LanguageServerConstants.CodeActions.CreateComponentFromTag,
+                Data = data,
+            };
+            var serializedParams = JToken.FromObject(resolutionParams);
+            var arguments = new JArray(serializedParams);
+
+            container.Add(new CommandOrCodeAction(new Command()
+            {
+                Title = "Create component from tag",
+                Name = "razor/runCodeAction",
+                Arguments = arguments,
+            }));
         }
 
         private void AddComponentAccessFromTag(RazorCodeActionContext context, MarkupStartTagSyntax startTag, List<CommandOrCodeAction> container)
@@ -97,9 +139,27 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             foreach (var tagHelperPair in matching.Values)
             {
                 var @namespace = tagHelperPair.Short.Name.Substring(0, tagHelperPair.Short.Name.LastIndexOf("."));
-                container.Add(new CommandOrCodeAction(new CodeAction()
+
+                var actionParams = new RefactorComponentUsingParams()
+                {
+                    Uri = context.Request.TextDocument.Uri,
+                    Namespaces = new[] { @namespace },
+                };
+                var data = JObject.FromObject(actionParams);
+
+                var resolutionParams = new RazorCodeActionResolutionParams()
+                {
+                    Action = LanguageServerConstants.CodeActions.AddUsing,
+                    Data = data,
+                };
+                var serializedParams = JToken.FromObject(resolutionParams);
+                var arguments = new JArray(serializedParams);
+
+                container.Add(new CommandOrCodeAction(new Command()
                 {
                     Title = $"@using {@namespace}",
+                    Name = "razor/runCodeAction",
+                    Arguments = arguments,
                 }));
                 container.Add(new CommandOrCodeAction(new CodeAction()
                 {
@@ -140,39 +200,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         {
             public TagHelperDescriptor Short = null;
             public TagHelperDescriptor FullyQualified = null;
-        }
-
-        private void AddCreateComponentFromTag(RazorCodeActionContext context, MarkupStartTagSyntax startTag, List<CommandOrCodeAction> container)
-        {
-            var path = context.Request.TextDocument.Uri.GetAbsoluteOrUNCPath();
-            var newComponentPath = Path.Combine(Path.GetDirectoryName(path), $"{startTag.Name.Content}.razor");
-            if (File.Exists(newComponentPath))
-            {
-                return;
-            }
-
-            var actionParams = new RefactorComponentCreateParams()
-            {
-                Uri = context.Request.TextDocument.Uri,
-                Name = startTag.Name.Content,
-                Where = newComponentPath,
-            };
-            var data = JObject.FromObject(actionParams);
-
-            var resolutionParams = new RazorCodeActionResolutionParams()
-            {
-                Action = LanguageServerConstants.CodeActions.RefactorComponentCreate,
-                Data = data,
-            };
-            var serializedParams = JToken.FromObject(resolutionParams);
-            var arguments = new JArray(serializedParams);
-
-            container.Add(new CommandOrCodeAction(new Command()
-            {
-                Title = "Create component from tag",
-                Name = "razor/runCodeAction",
-                Arguments = arguments,
-            }));
         }
 
         private bool IsTagUnknown(MarkupStartTagSyntax startTag, RazorCodeActionContext context)

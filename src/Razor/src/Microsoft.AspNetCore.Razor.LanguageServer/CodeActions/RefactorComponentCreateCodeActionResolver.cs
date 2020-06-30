@@ -36,7 +36,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             _documentResolver = documentResolver;
         }
 
-        public override string Action => LanguageServerConstants.CodeActions.RefactorComponentCreate;
+        public override string Action => LanguageServerConstants.CodeActions.CreateComponentFromTag;
 
         public override async Task<WorkspaceEdit> ResolveAsync(JObject data, CancellationToken cancellationToken)
         {
