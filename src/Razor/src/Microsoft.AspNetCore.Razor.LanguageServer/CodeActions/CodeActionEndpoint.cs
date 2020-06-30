@@ -32,29 +32,14 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             DocumentResolver documentResolver,
             ILoggerFactory loggerFactory)
         {
-            if (providers is null)
-            {
-                throw new ArgumentNullException(nameof(foregroundDispatcher));
-            }
-
-            if (foregroundDispatcher is null)
-            {
-                throw new ArgumentNullException(nameof(foregroundDispatcher));
-            }
-
-            if (documentResolver is null)
-            {
-                throw new ArgumentNullException(nameof(documentResolver));
-            }
-
             if (loggerFactory is null)
             {
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _providers = providers;
-            _foregroundDispatcher = foregroundDispatcher;
-            _documentResolver = documentResolver;
+            _providers = _providers = providers ?? throw new ArgumentNullException(nameof(providers));;
+            _foregroundDispatcher = foregroundDispatcher ?? throw new ArgumentNullException(nameof(foregroundDispatcher));
+            _documentResolver = documentResolver ?? throw new ArgumentNullException(nameof(documentResolver));
             _logger = loggerFactory.CreateLogger<CodeActionEndpoint>();
         }
 

@@ -7,7 +7,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
-    internal struct RazorCodeActionContext
+    internal sealed class RazorCodeActionContext
     {
         public RazorCodeActionContext(CodeActionParams request, RazorCodeDocument document, SourceLocation location)
         {
@@ -25,8 +25,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             Location = location;
         }
 
-        public readonly CodeActionParams Request { get; }
-        public readonly RazorCodeDocument Document { get; }
-        public readonly SourceLocation Location { get; }
+        public CodeActionParams Request { get; }
+        public RazorCodeDocument Document { get; }
+        public SourceLocation Location { get; }
     }
 }

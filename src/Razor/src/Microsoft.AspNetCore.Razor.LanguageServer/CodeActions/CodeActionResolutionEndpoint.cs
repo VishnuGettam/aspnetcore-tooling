@@ -19,11 +19,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             IEnumerable<RazorCodeActionResolver> resolvers,
             ILoggerFactory loggerFactory)
         {
-            if (resolvers is null)
-            {
-                throw new ArgumentNullException(nameof(resolvers));
-            }
-
             if (loggerFactory is null)
             {
                 throw new ArgumentNullException(nameof(loggerFactory));
@@ -32,7 +27,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             _logger = loggerFactory.CreateLogger<CodeActionResolutionEndpoint>();
 
             var resolverMap = new Dictionary<string, RazorCodeActionResolver>();
-            foreach (var resolver in resolvers)
+            foreach (var resolver in resolvers ?? throw new ArgumentNullException(nameof(resolvers)))
             {
                 if (resolverMap.ContainsKey(resolver.Action))
                 {

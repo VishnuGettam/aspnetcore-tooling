@@ -116,16 +116,20 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 
             // Assert
             Assert.NotNull(workspaceEdit);
-            var documentChanges = workspaceEdit.Changes[documentUri];
-            workspaceEdit.Changes.Remove(documentUri);
-            Assert.Single(documentChanges);
-            Assert.Equal(14, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            Assert.Equal(41, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            var codeBehindChanges = workspaceEdit.Changes.Values.First();
-            Assert.Single(codeBehindChanges);
-            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
-            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
-            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+            Assert.NotNull(workspaceEdit.DocumentChanges);
+            Assert.Equal(3, workspaceEdit.DocumentChanges.Count());
+            var documentChanges = workspaceEdit.DocumentChanges.ToArray();
+            var createFileChange = documentChanges[0];
+            Assert.True(createFileChange.IsCreateFile);
+            var editCodeDocumentChange = documentChanges[1];
+            var editCodeDocumentEdit = editCodeDocumentChange.TextDocumentEdit.Edits.First();
+            Assert.Equal(14, editCodeDocumentEdit.Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(41, editCodeDocumentEdit.Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            var editCodeBehindChange = documentChanges[2];
+            var editCodeBehindEdit = editCodeBehindChange.TextDocumentEdit.Edits.First();
+            Assert.Contains("public partial class Test", editCodeBehindEdit.NewText);
+            Assert.Contains("private var x = 1", editCodeBehindEdit.NewText);
+            Assert.Contains("namespace test.Pages", editCodeBehindEdit.NewText);
         }
 
         [Fact]
@@ -152,16 +156,20 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 
             // Assert
             Assert.NotNull(workspaceEdit);
-            var documentChanges = workspaceEdit.Changes[documentUri];
-            workspaceEdit.Changes.Remove(documentUri);
-            Assert.Single(documentChanges);
-            Assert.Equal(14, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            Assert.Equal(46, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            var codeBehindChanges = workspaceEdit.Changes.Values.First();
-            Assert.Single(codeBehindChanges);
-            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
-            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
-            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+            Assert.NotNull(workspaceEdit.DocumentChanges);
+            Assert.Equal(3, workspaceEdit.DocumentChanges.Count());
+            var documentChanges = workspaceEdit.DocumentChanges.ToArray();
+            var createFileChange = documentChanges[0];
+            Assert.True(createFileChange.IsCreateFile);
+            var editCodeDocumentChange = documentChanges[1];
+            var editCodeDocumentEdit = editCodeDocumentChange.TextDocumentEdit.Edits.First();
+            Assert.Equal(14, editCodeDocumentEdit.Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(46, editCodeDocumentEdit.Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            var editCodeBehindChange = documentChanges[2];
+            var editCodeBehindEdit = editCodeBehindChange.TextDocumentEdit.Edits.First();
+            Assert.Contains("public partial class Test", editCodeBehindEdit.NewText);
+            Assert.Contains("private var x = 1", editCodeBehindEdit.NewText);
+            Assert.Contains("namespace test.Pages", editCodeBehindEdit.NewText);
         }
 
         [Fact]
@@ -188,17 +196,22 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 
             // Assert
             Assert.NotNull(workspaceEdit);
-            var documentChanges = workspaceEdit.Changes[documentUri];
-            workspaceEdit.Changes.Remove(documentUri);
-            Assert.Single(documentChanges);
-            Assert.Equal(14 + 26, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            Assert.Equal(41 + 26, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            var codeBehindChanges = workspaceEdit.Changes.Values.First();
-            Assert.Single(codeBehindChanges);
-            Assert.Contains("using System.Diagnostics", codeBehindChanges.First().NewText);
-            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
-            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
-            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+            Assert.NotNull(workspaceEdit.DocumentChanges);
+            Assert.Equal(3, workspaceEdit.DocumentChanges.Count());
+            var documentChanges = workspaceEdit.DocumentChanges.ToArray();
+            var createFileChange = documentChanges[0];
+            Assert.True(createFileChange.IsCreateFile);
+            var editCodeDocumentChange = documentChanges[1];
+            var editCodeDocumentEdit = editCodeDocumentChange.TextDocumentEdit.Edits.First();
+            Assert.Equal(14 + 26, editCodeDocumentEdit.Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(41 + 26, editCodeDocumentEdit.Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            var editCodeBehindChange = documentChanges[2];
+            var editCodeBehindEdit = editCodeBehindChange.TextDocumentEdit.Edits.First();
+            Assert.Contains("using System.Diagnostics", editCodeBehindEdit.NewText);
+            Assert.Contains("public partial class Test", editCodeBehindEdit.NewText);
+            Assert.Contains("private var x = 1", editCodeBehindEdit.NewText);
+            Assert.Contains("namespace test.Pages", editCodeBehindEdit.NewText);
+
         }
 
         private static DocumentResolver CreateDocumentResolver(string documentPath, RazorCodeDocument codeDocument)

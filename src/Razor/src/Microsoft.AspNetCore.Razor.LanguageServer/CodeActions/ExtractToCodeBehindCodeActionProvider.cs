@@ -36,12 +36,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             node = node.Ancestors().FirstOrDefault(n => n.Kind == SyntaxKind.RazorDirective);
-            if (node == null)
-            {
-                return EmptyResult;
-            }
-            
-            if (!(node is RazorDirectiveSyntax directiveNode))
+            if (node == null || !(node is RazorDirectiveSyntax directiveNode))
             {
                 return EmptyResult;
             }

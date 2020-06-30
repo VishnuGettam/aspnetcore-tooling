@@ -19,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using CSharpSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using CSharpSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 {
@@ -29,7 +30,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         private readonly FilePathNormalizer _filePathNormalizer;
         private readonly ILogger _logger;
 
-        private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
+        private static readonly Range StartOfDocumentRange = default;
 
         public ExtractToCodeBehindCodeActionResolver(
             ForegroundDispatcher foregroundDispatcher,
@@ -37,29 +38,14 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             FilePathNormalizer filePathNormalizer,
             ILoggerFactory loggerFactory)
         {
-            if (foregroundDispatcher is null)
-            {
-                throw new ArgumentNullException(nameof(foregroundDispatcher));
-            }
-
-            if (documentResolver is null)
-            {
-                throw new ArgumentNullException(nameof(documentResolver));
-            }
-
-            if (filePathNormalizer is null)
-            {
-                throw new ArgumentNullException(nameof(filePathNormalizer));
-            }
-
             if (loggerFactory is null)
             {
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _foregroundDispatcher = foregroundDispatcher;
-            _documentResolver = documentResolver;
-            _filePathNormalizer = filePathNormalizer;
+            _foregroundDispatcher = foregroundDispatcher ?? throw new ArgumentNullException(nameof(foregroundDispatcher));
+            _documentResolver = documentResolver ?? throw new ArgumentNullException(nameof(documentResolver));
+            _filePathNormalizer = filePathNormalizer ?? throw new ArgumentNullException(nameof(filePathNormalizer));
             _logger = loggerFactory.CreateLogger<ExtractToCodeBehindCodeActionProvider>();
         }
 
@@ -93,7 +79,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             var codeBehindPath = GenerateCodeBehindPath(path);
-            var codeBehindUri = new UriBuilder()
+            var codeBehindUri = new UriBuilder
             {
                 Scheme = Uri.UriSchemeFile,
                 Path = codeBehindPath,
@@ -116,30 +102,30 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 new Position(start.LineIndex, start.CharacterIndex),
                 new Position(end.LineIndex, end.CharacterIndex));
 
-            var codeDocumentIdentifier = new VersionedTextDocumentIdentifier() { Uri = actionParams.Uri, Version = 0 };
-            var codeBehindDocumentIdentifier = new VersionedTextDocumentIdentifier() { Uri = codeBehindUri, Version = 0 };
+            var codeDocumentIdentifier = new VersionedTextDocumentIdentifier { Uri = actionParams.Uri, Version = 0 };
+            var codeBehindDocumentIdentifier = new VersionedTextDocumentIdentifier { Uri = codeBehindUri, Version = 0 };
 
             var documentChanges = new List<WorkspaceEditDocumentChange>
             {
-                new WorkspaceEditDocumentChange(new CreateFile() { Uri = codeBehindUri.ToString() }),
-                new WorkspaceEditDocumentChange(new TextDocumentEdit()
+                new WorkspaceEditDocumentChange(new CreateFile { Uri = codeBehindUri.ToString() }),
+                new WorkspaceEditDocumentChange(new TextDocumentEdit
                 {
                     TextDocument = codeDocumentIdentifier,
                     Edits = new[]
                     {
-                        new TextEdit()
+                        new TextEdit
                         {
                             NewText = "",
                             Range = removeRange,
                         }
                     },               
                 }),
-                new WorkspaceEditDocumentChange(new TextDocumentEdit()
+                new WorkspaceEditDocumentChange(new TextDocumentEdit
                 {
                     TextDocument = codeBehindDocumentIdentifier,
                     Edits  = new[]
                     {
-                        new TextEdit()
+                        new TextEdit
                         {
                             NewText = codeBehindContent,
                             Range = StartOfDocumentRange,
@@ -148,7 +134,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 })
             };
             
-            return new WorkspaceEdit()
+            return new WorkspaceEdit
             {
                 DocumentChanges = documentChanges,
             };
@@ -206,12 +192,11 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 .FindDescendantNodes<IntermediateNode>()
                 .FirstOrDefault(n => n is NamespaceDeclarationIntermediateNode);
 
+            var mock = (ClassDeclarationSyntax)CSharpSyntaxFactory.ParseMemberDeclaration($"class Class {contents}");
             var @class = CSharpSyntaxFactory
                 .ClassDeclaration(className)
-                .AddModifiers(CSharpSyntaxFactory.ParseToken("public"), CSharpSyntaxFactory.ParseToken("partial"));
-
-            var mock = (ClassDeclarationSyntax)CSharpSyntaxFactory.ParseMemberDeclaration($"class Class {contents}");
-            @class = @class.AddMembers(mock.Members.ToArray());
+                .AddModifiers(CSharpSyntaxFactory.Token(CSharpSyntaxKind.PublicKeyword), CSharpSyntaxFactory.Token(CSharpSyntaxKind.PartialKeyword))
+                .AddMembers(mock.Members.ToArray());
 
             var @namespace = CSharpSyntaxFactory
                 .NamespaceDeclaration(CSharpSyntaxFactory.ParseName(namespaceNode.Content))
