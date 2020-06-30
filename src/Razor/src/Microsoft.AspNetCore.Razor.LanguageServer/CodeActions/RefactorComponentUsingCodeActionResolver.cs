@@ -112,12 +112,13 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 if (namespaces.Count > 0)
                 {
                     var usingDirectiveLineIndex = codeDocument.Source.Lines.GetLocation(usingDirectives.Last().Node.Span.End).LineIndex;
-                    var head = new Position(usingDirectiveLineIndex, 0);
+                    var head = new Position(usingDirectiveLineIndex + 1, 0);
                     var edit = new TextEdit() { Range = new Range(head, head), NewText = "" };
                     do
                     {
                         edit.NewText += $"@using {namespaces.Dequeue()}\n";
                     } while (namespaces.Count > 0);
+                    edits.Add(edit);
                 }
                 documentChanges.Add(new WorkspaceEditDocumentChange(new TextDocumentEdit()
                 {
@@ -127,6 +128,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
             else
             {
+                var head = new Position(0, 0);
                 var lastNamespaceOrPageDirective = codeDocument.GetSyntaxTree().Root
                     .DescendantNodes()
                     .Where(n => IsNamespaceOrPageDirective(n))
@@ -134,12 +136,13 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 if (lastNamespaceOrPageDirective != null)
                 {
                     var end = codeDocument.Source.Lines.GetLocation(lastNamespaceOrPageDirective.Span.End);
-                    var head = new Position(end.LineIndex + 1, 0);
-                    var range = new Range(head, head);
-                    documentChanges.Add(new WorkspaceEditDocumentChange(new TextDocumentEdit()
-                    {
-                        TextDocument = codeDocumentIdentifier,
-                        Edits = new[]
+                    head = new Position(end.LineIndex + 1, 0);
+                }
+                var range = new Range(head, head);
+                documentChanges.Add(new WorkspaceEditDocumentChange(new TextDocumentEdit()
+                {
+                    TextDocument = codeDocumentIdentifier,
+                    Edits = new[]
                         {
                             new TextEdit()
                             {
@@ -147,8 +150,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                                 Range = range,
                             }
                         }
-                    }));
-                }
+                }));
             }
 
             return new WorkspaceEdit()
