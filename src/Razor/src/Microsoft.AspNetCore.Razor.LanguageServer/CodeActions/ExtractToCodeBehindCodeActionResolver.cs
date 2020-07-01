@@ -66,7 +66,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 return null;
             }
 
-            var codeDocument = await document.GetGeneratedOutputAsync();
+            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
             if (codeDocument.IsUnsupported())
             {
                 return null;
@@ -102,8 +102,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 new Position(start.LineIndex, start.CharacterIndex),
                 new Position(end.LineIndex, end.CharacterIndex));
 
-            var codeDocumentIdentifier = new VersionedTextDocumentIdentifier { Uri = actionParams.Uri, Version = 0 };
-            var codeBehindDocumentIdentifier = new VersionedTextDocumentIdentifier { Uri = codeBehindUri, Version = 0 };
+            var codeDocumentIdentifier = new VersionedTextDocumentIdentifier { Uri = actionParams.Uri };
+            var codeBehindDocumentIdentifier = new VersionedTextDocumentIdentifier { Uri = codeBehindUri };
 
             var documentChanges = new List<WorkspaceEditDocumentChange>
             {
@@ -115,7 +115,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                     {
                         new TextEdit
                         {
-                            NewText = "",
+                            NewText = string.Empty,
                             Range = removeRange,
                         }
                     },               
@@ -153,7 +153,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             string codeBehindPath;
             do
             {
-                var identifier = n > 0 ? n.ToString() : "";  // Make it look nice
+                var identifier = n > 0 ? n.ToString() : string.Empty;  // Make it look nice
                 codeBehindPath = Path.Combine(
                     Path.GetDirectoryName(path),
                     $"{Path.GetFileNameWithoutExtension(path)}{identifier}{Path.GetExtension(path)}.cs");

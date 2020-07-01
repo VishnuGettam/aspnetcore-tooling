@@ -37,7 +37,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _providers = _providers = providers ?? throw new ArgumentNullException(nameof(providers));;
+            _providers = providers ?? throw new ArgumentNullException(nameof(providers));
             _foregroundDispatcher = foregroundDispatcher ?? throw new ArgumentNullException(nameof(foregroundDispatcher));
             _documentResolver = documentResolver ?? throw new ArgumentNullException(nameof(documentResolver));
             _logger = loggerFactory.CreateLogger<CodeActionEndpoint>();
@@ -69,7 +69,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 return null;
             }
 
-            var codeDocument = await document.GetGeneratedOutputAsync();
+            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
             if (codeDocument.IsUnsupported())
             {
                 return null;

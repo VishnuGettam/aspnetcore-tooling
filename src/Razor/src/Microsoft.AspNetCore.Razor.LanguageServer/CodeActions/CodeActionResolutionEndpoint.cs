@@ -26,8 +26,13 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 
             _logger = loggerFactory.CreateLogger<CodeActionResolutionEndpoint>();
 
+            if (resolvers is null)
+            {
+                throw new ArgumentNullException(nameof(resolvers));
+            }
+
             var resolverMap = new Dictionary<string, RazorCodeActionResolver>();
-            foreach (var resolver in resolvers ?? throw new ArgumentNullException(nameof(resolvers)))
+            foreach (var resolver in resolvers)
             {
                 if (resolverMap.ContainsKey(resolver.Action))
                 {
@@ -51,10 +56,10 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             if (resolver is null)
             {
                 Debug.Fail($"No resolver registered for {request.Action}.");
-                return new RazorCodeActionResolutionResponse() { Edit = null };
+                return new RazorCodeActionResolutionResponse();
             }
 
-            var edit = await resolver.ResolveAsync(request.Data, cancellationToken);
+            var edit = await resolver.ResolveAsync(request.Data, cancellationToken).ConfigureAwait(false);
             return new RazorCodeActionResolutionResponse() { Edit = edit };
         }
     }
