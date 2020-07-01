@@ -62,7 +62,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             {
                 _documentResolver.TryResolveDocument(request.TextDocument.Uri.GetAbsoluteOrUNCPath(), out var documentSnapshot);
                 return documentSnapshot;
-            }, cancellationToken, TaskCreationOptions.None, _foregroundDispatcher.ForegroundScheduler);
+            }, cancellationToken, TaskCreationOptions.None, _foregroundDispatcher.ForegroundScheduler).ConfigureAwait(false);
 
             if (document is null)
             {
@@ -75,7 +75,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 return null;
             }
 
-            var sourceText = await document.GetTextAsync();
+            var sourceText = await document.GetTextAsync().ConfigureAwait(false);
             var linePosition = new LinePosition((int)request.Range.Start.Line, (int)request.Range.Start.Character);
             var hostDocumentIndex = sourceText.Lines.GetPosition(linePosition);
             var location = new SourceLocation(hostDocumentIndex, (int)request.Range.Start.Line, (int)request.Range.Start.Character);
@@ -92,7 +92,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 }
             }
 
-            var results = await Task.WhenAll(tasks);
+            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
             var container = new List<CommandOrCodeAction>();
             foreach (var result in results)
             {

@@ -30,7 +30,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         private readonly FilePathNormalizer _filePathNormalizer;
         private readonly ILogger _logger;
 
-        private static readonly Range StartOfDocumentRange = default;
+        private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
 
         public ExtractToCodeBehindCodeActionResolver(
             ForegroundDispatcher foregroundDispatcher,
@@ -60,7 +60,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             {
                 _documentResolver.TryResolveDocument(path, out var documentSnapshot);
                 return documentSnapshot;
-            }, cancellationToken, TaskCreationOptions.None, _foregroundDispatcher.ForegroundScheduler);
+            }, cancellationToken, TaskCreationOptions.None, _foregroundDispatcher.ForegroundScheduler).ConfigureAwait(false);
             if (document is null)
             {
                 return null;
@@ -86,7 +86,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 Host = string.Empty,
             }.Uri;
 
-            var text = await document.GetTextAsync();
+            var text = await document.GetTextAsync().ConfigureAwait(false);
             if (text is null)
             {
                 return null;
