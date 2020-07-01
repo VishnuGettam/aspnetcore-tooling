@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
@@ -8,10 +11,7 @@ using Microsoft.CodeAnalysis.Razor.ProjectSystem;
 using Microsoft.CodeAnalysis.Text;
 using Moq;
 using Xunit;
-using System;
 using Newtonsoft.Json.Linq;
-using System.Linq;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {
