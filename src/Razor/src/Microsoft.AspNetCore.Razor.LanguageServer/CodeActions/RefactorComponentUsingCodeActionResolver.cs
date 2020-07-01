@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Razor.Extensions;
 using Microsoft.AspNetCore.Razor.Language;
+using Microsoft.AspNetCore.Razor.Language.Components;
 using Microsoft.AspNetCore.Razor.Language.Extensions;
 using Microsoft.AspNetCore.Razor.Language.Legacy;
 using Microsoft.AspNetCore.Razor.Language.Syntax;
@@ -137,10 +137,10 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 if (lastNamespaceOrPageDirective != null)
                 {
                     var end = codeDocument.Source.Lines.GetLocation(lastNamespaceOrPageDirective.Span.End);
-                    head = new Position(end.LineIndex + 1, 0);
+                    head = new Position(end.LineIndex, 0);
                 }
                 var range = new Range(head, head);
-                documentChanges.Add(new WorkspaceEditDocumentChange(new TextDocumentEdit()
+                documentChanges.Add(new WorkspaceEditDocumentChange(new TextDocumentEdit
                 {
                     TextDocument = codeDocumentIdentifier,
                     Edits = new[]
@@ -184,7 +184,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         {
             if (node is RazorDirectiveSyntax directiveNode)
             {
-                return directiveNode.DirectiveDescriptor == PageDirective.Directive || directiveNode.DirectiveDescriptor == NamespaceDirective.Directive;
+                return directiveNode.DirectiveDescriptor == ComponentPageDirective.Directive || directiveNode.DirectiveDescriptor == NamespaceDirective.Directive;
             }
             return false;
         }
