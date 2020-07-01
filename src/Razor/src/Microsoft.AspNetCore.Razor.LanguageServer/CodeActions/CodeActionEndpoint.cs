@@ -32,29 +32,14 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             DocumentResolver documentResolver,
             ILoggerFactory loggerFactory)
         {
-            if (providers is null)
-            {
-                throw new ArgumentNullException(nameof(foregroundDispatcher));
-            }
-
-            if (foregroundDispatcher is null)
-            {
-                throw new ArgumentNullException(nameof(foregroundDispatcher));
-            }
-
-            if (documentResolver is null)
-            {
-                throw new ArgumentNullException(nameof(documentResolver));
-            }
-
             if (loggerFactory is null)
             {
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _providers = providers;
-            _foregroundDispatcher = foregroundDispatcher;
-            _documentResolver = documentResolver;
+            _providers = providers ?? throw new ArgumentNullException(nameof(providers));
+            _foregroundDispatcher = foregroundDispatcher ?? throw new ArgumentNullException(nameof(foregroundDispatcher));
+            _documentResolver = documentResolver ?? throw new ArgumentNullException(nameof(documentResolver));
             _logger = loggerFactory.CreateLogger<CodeActionEndpoint>();
         }
 
@@ -77,20 +62,20 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             {
                 _documentResolver.TryResolveDocument(request.TextDocument.Uri.GetAbsoluteOrUNCPath(), out var documentSnapshot);
                 return documentSnapshot;
-            }, cancellationToken, TaskCreationOptions.None, _foregroundDispatcher.ForegroundScheduler);
+            }, cancellationToken, TaskCreationOptions.None, _foregroundDispatcher.ForegroundScheduler).ConfigureAwait(false);
 
             if (document is null)
             {
                 return null;
             }
 
-            var codeDocument = await document.GetGeneratedOutputAsync();
+            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
             if (codeDocument.IsUnsupported())
             {
                 return null;
             }
 
-            var sourceText = await document.GetTextAsync();
+            var sourceText = await document.GetTextAsync().ConfigureAwait(false);
             var linePosition = new LinePosition((int)request.Range.Start.Line, (int)request.Range.Start.Character);
             var hostDocumentIndex = sourceText.Lines.GetPosition(linePosition);
             var location = new SourceLocation(hostDocumentIndex, (int)request.Range.Start.Line, (int)request.Range.Start.Character);
@@ -107,7 +92,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 }
             }
 
-            var results = await Task.WhenAll(tasks);
+            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
             var container = new List<CommandOrCodeAction>();
             foreach (var result in results)
             {

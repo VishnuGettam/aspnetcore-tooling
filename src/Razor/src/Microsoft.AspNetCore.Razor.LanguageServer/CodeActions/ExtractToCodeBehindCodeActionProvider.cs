@@ -23,25 +23,26 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 
         override public Task<CommandOrCodeActionContainer> ProvideAsync(RazorCodeActionContext context, CancellationToken cancellationToken)
         {
-            if (!FileKinds.IsComponent(context.CodeDocument.GetFileKind()))
+            if (context is null)
+            {
+                return EmptyResult;
+            }
+
+            if (!FileKinds.IsComponent(context.Document.GetFileKind()))
             {
                 return EmptyResult;
             }
 
             var change = new SourceChange(context.Location.AbsoluteIndex, length: 0, newText: string.Empty);
-            var node = context.CodeDocument.GetSyntaxTree().Root.LocateOwner(change);
-            if (node is null)
+            var syntaxTree = context.Document.GetSyntaxTree();
+            if (syntaxTree?.Root is null)
             {
                 return EmptyResult;
             }
 
+            var node = syntaxTree.Root.LocateOwner(change);
             node = node.Ancestors().FirstOrDefault(n => n.Kind == SyntaxKind.RazorDirective);
-            if (node == null)
-            {
-                return EmptyResult;
-            }
-
-            if (!(node is RazorDirectiveSyntax directiveNode))
+            if (node == null || !(node is RazorDirectiveSyntax directiveNode))
             {
                 return EmptyResult;
             }
@@ -98,7 +99,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 new Command()
                 {
                     Title = "Extract code block into backing document",
-                    Name = "razor/runCodeAction",
+                    Name = LanguageServerConstants.RazorCodeActionRunnerCommand,
                     Arguments = arguments,
                 }
             };

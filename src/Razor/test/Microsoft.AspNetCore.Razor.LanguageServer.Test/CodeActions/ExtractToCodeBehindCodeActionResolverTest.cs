@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.AspNetCore.Razor.LanguageServer.Common;
 using Microsoft.AspNetCore.Razor.LanguageServer.CodeActions;
@@ -8,10 +11,7 @@ using Microsoft.CodeAnalysis.Razor.ProjectSystem;
 using Microsoft.CodeAnalysis.Text;
 using Moq;
 using Xunit;
-using System;
 using Newtonsoft.Json.Linq;
-using System.Linq;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
 {
@@ -45,7 +45,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
         {
             // Arrange
             var documentPath = "c:\\Test.razor";
-            var contents = "@page \"/test\"\n@code { private var x = 1; }";
+            var contents = $"@page \"/test\"{Environment.NewLine}@code {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
             codeDocument.SetUnsupported();
 
@@ -71,7 +71,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
         {
             // Arrange
             var documentPath = "c:\\Test.razor";
-            var contents = "@page \"/test\"\n@code { private var x = 1; }";
+            var contents = $"@page \"/test\"{Environment.NewLine}@code {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
             codeDocument.SetFileKind(FileKinds.Legacy);
 
@@ -98,34 +98,42 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             // Arrange
             var documentPath = "c:/Test.razor";
             var documentUri = new Uri(documentPath);
-            var contents = "@page \"/test\"\n@code { private var x = 1; }";
+            var contents = $"@page \"/test\"{Environment.NewLine}@code {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
 
             var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
-            var data = JObject.FromObject(new ExtractToCodeBehindParams()
+            var actionParams = new ExtractToCodeBehindParams
             {
                 Uri = documentUri,
-                RemoveStart = 14,
-                ExtractStart = 20,
-                ExtractEnd = 41,
-                RemoveEnd = 41,
-            });
+                RemoveStart = contents.IndexOf("@code"),
+                ExtractStart = contents.IndexOf("{"),
+                ExtractEnd = contents.IndexOf("}"),
+                RemoveEnd = contents.IndexOf("}"),
+            };
+            var data = JObject.FromObject(actionParams);
 
             // Act
             var workspaceEdit = await resolver.ResolveAsync(data, default);
 
             // Assert
             Assert.NotNull(workspaceEdit);
-            var documentChanges = workspaceEdit.Changes[documentUri];
-            workspaceEdit.Changes.Remove(documentUri);
-            Assert.Single(documentChanges);
-            Assert.Equal(14, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            Assert.Equal(41, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            var codeBehindChanges = workspaceEdit.Changes.Values.First();
-            Assert.Single(codeBehindChanges);
-            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
-            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
-            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+            Assert.NotNull(workspaceEdit.DocumentChanges);
+            Assert.Equal(3, workspaceEdit.DocumentChanges.Count());
+
+            var documentChanges = workspaceEdit.DocumentChanges.ToArray();
+            var createFileChange = documentChanges[0];
+            Assert.True(createFileChange.IsCreateFile);
+
+            var editCodeDocumentChange = documentChanges[1];
+            var editCodeDocumentEdit = editCodeDocumentChange.TextDocumentEdit.Edits.First();
+            Assert.Equal(actionParams.RemoveStart, editCodeDocumentEdit.Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(actionParams.RemoveEnd, editCodeDocumentEdit.Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+
+            var editCodeBehindChange = documentChanges[2];
+            var editCodeBehindEdit = editCodeBehindChange.TextDocumentEdit.Edits.First();
+            Assert.Contains("public partial class Test", editCodeBehindEdit.NewText);
+            Assert.Contains("private var x = 1", editCodeBehindEdit.NewText);
+            Assert.Contains("namespace test.Pages", editCodeBehindEdit.NewText);
         }
 
         [Fact]
@@ -134,34 +142,42 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             // Arrange
             var documentPath = "c:/Test.razor";
             var documentUri = new Uri(documentPath);
-            var contents = "@page \"/test\"\n@functions { private var x = 1; }";
+            var contents = $"@page \"/test\"{Environment.NewLine}@functions {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
 
             var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
-            var data = JObject.FromObject(new ExtractToCodeBehindParams()
+            var actionParams = new ExtractToCodeBehindParams
             {
                 Uri = documentUri,
-                RemoveStart = 14,
-                ExtractStart = 24,
-                ExtractEnd = 46,
-                RemoveEnd = 46,
-            });
+                RemoveStart = contents.IndexOf("@functions"),
+                ExtractStart = contents.IndexOf("{"),
+                ExtractEnd = contents.IndexOf("}"),
+                RemoveEnd = contents.IndexOf("}"),
+            };
+            var data = JObject.FromObject(actionParams);
 
             // Act
             var workspaceEdit = await resolver.ResolveAsync(data, default);
 
             // Assert
             Assert.NotNull(workspaceEdit);
-            var documentChanges = workspaceEdit.Changes[documentUri];
-            workspaceEdit.Changes.Remove(documentUri);
-            Assert.Single(documentChanges);
-            Assert.Equal(14, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            Assert.Equal(46, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            var codeBehindChanges = workspaceEdit.Changes.Values.First();
-            Assert.Single(codeBehindChanges);
-            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
-            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
-            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+            Assert.NotNull(workspaceEdit.DocumentChanges);
+            Assert.Equal(3, workspaceEdit.DocumentChanges.Count());
+
+            var documentChanges = workspaceEdit.DocumentChanges.ToArray();
+            var createFileChange = documentChanges[0];
+            Assert.True(createFileChange.IsCreateFile);
+
+            var editCodeDocumentChange = documentChanges[1];
+            var editCodeDocumentEdit = editCodeDocumentChange.TextDocumentEdit.Edits.First();
+            Assert.Equal(actionParams.RemoveStart, editCodeDocumentEdit.Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(actionParams.RemoveEnd, editCodeDocumentEdit.Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+
+            var editCodeBehindChange = documentChanges[2];
+            var editCodeBehindEdit = editCodeBehindChange.TextDocumentEdit.Edits.First();
+            Assert.Contains("public partial class Test", editCodeBehindEdit.NewText);
+            Assert.Contains("private var x = 1", editCodeBehindEdit.NewText);
+            Assert.Contains("namespace test.Pages", editCodeBehindEdit.NewText);
         }
 
         [Fact]
@@ -170,35 +186,43 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             // Arrange
             var documentPath = "c:/Test.razor";
             var documentUri = new Uri(documentPath);
-            var contents = "@page \"/test\"\n@using System.Diagnostics\n@code { private var x = 1; }";
+            var contents = $"@page \"/test\"\n@using System.Diagnostics{Environment.NewLine}@code {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
 
             var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
-            var data = JObject.FromObject(new ExtractToCodeBehindParams()
+            var actionParams = new ExtractToCodeBehindParams
             {
                 Uri = documentUri,
-                RemoveStart = 14 + 26,
-                ExtractStart = 20 + 26,
-                ExtractEnd = 41 + 26,
-                RemoveEnd = 41 + 26,
-            });
+                RemoveStart = contents.IndexOf("@code"),
+                ExtractStart = contents.IndexOf("{"),
+                ExtractEnd = contents.IndexOf("}"),
+                RemoveEnd = contents.IndexOf("}"),
+            };
+            var data = JObject.FromObject(actionParams);
 
             // Act
             var workspaceEdit = await resolver.ResolveAsync(data, default);
 
             // Assert
             Assert.NotNull(workspaceEdit);
-            var documentChanges = workspaceEdit.Changes[documentUri];
-            workspaceEdit.Changes.Remove(documentUri);
-            Assert.Single(documentChanges);
-            Assert.Equal(14 + 26, documentChanges.First().Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            Assert.Equal(41 + 26, documentChanges.First().Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
-            var codeBehindChanges = workspaceEdit.Changes.Values.First();
-            Assert.Single(codeBehindChanges);
-            Assert.Contains("using System.Diagnostics", codeBehindChanges.First().NewText);
-            Assert.Contains("public partial class Test", codeBehindChanges.First().NewText);
-            Assert.Contains("private var x = 1", codeBehindChanges.First().NewText);
-            Assert.Contains("namespace test.Pages", codeBehindChanges.First().NewText);
+            Assert.NotNull(workspaceEdit.DocumentChanges);
+            Assert.Equal(3, workspaceEdit.DocumentChanges.Count());
+
+            var documentChanges = workspaceEdit.DocumentChanges.ToArray();
+            var createFileChange = documentChanges[0];
+            Assert.True(createFileChange.IsCreateFile);
+
+            var editCodeDocumentChange = documentChanges[1];
+            var editCodeDocumentEdit = editCodeDocumentChange.TextDocumentEdit.Edits.First();
+            Assert.Equal(actionParams.RemoveStart, editCodeDocumentEdit.Range.Start.GetAbsoluteIndex(codeDocument.GetSourceText()));
+            Assert.Equal(actionParams.RemoveEnd, editCodeDocumentEdit.Range.End.GetAbsoluteIndex(codeDocument.GetSourceText()));
+
+            var editCodeBehindChange = documentChanges[2];
+            var editCodeBehindEdit = editCodeBehindChange.TextDocumentEdit.Edits.First();
+            Assert.Contains("using System.Diagnostics", editCodeBehindEdit.NewText);
+            Assert.Contains("public partial class Test", editCodeBehindEdit.NewText);
+            Assert.Contains("private var x = 1", editCodeBehindEdit.NewText);
+            Assert.Contains("namespace test.Pages", editCodeBehindEdit.NewText);
         }
 
         private static DocumentResolver CreateDocumentResolver(string documentPath, RazorCodeDocument codeDocument)
