@@ -140,12 +140,12 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
             foreach (var tagHelperPair in matching.Values)
             {
-                var @namespace = tagHelperPair.Short.Name.Substring(0, tagHelperPair.Short.Name.LastIndexOf("."));
-
+                DefaultRazorTagHelperBinderPhase.ComponentDirectiveVisitor.TrySplitNamespaceAndType(tagHelperPair.Short.Name, out var namespaceSpan, out var typeSpan);
+                var namespaceName = tagHelperPair.Short.Name.Substring(namespaceSpan.Start, namespaceSpan.Length);
                 var actionParams = new RefactorComponentUsingParams()
                 {
                     Uri = context.Request.TextDocument.Uri,
-                    Namespaces = new[] { @namespace },
+                    Namespaces = new[] { namespaceName },
                 };
                 var data = JObject.FromObject(actionParams);
 
@@ -159,7 +159,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
 
                 container.Add(new CommandOrCodeAction(new Command()
                 {
-                    Title = $"@using {@namespace}",
+                    Title = $"@using {namespaceName}",
                     Name = "razor/runCodeAction",
                     Arguments = arguments,
                 }));
