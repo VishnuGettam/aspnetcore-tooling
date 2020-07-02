@@ -26,7 +26,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
         public async Task Handle_MissingFile()
         {
             // Arrange
-            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), EmptyDocumentResolver, FilePathNormalizer, LoggerFactory);
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), EmptyDocumentResolver, FilePathNormalizer);
             var data = JObject.FromObject(new ExtractToCodeBehindParams()
             {
                 Uri = new Uri("c:/Test.razor"),
@@ -52,7 +52,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             var codeDocument = CreateCodeDocument(contents);
             codeDocument.SetUnsupported();
 
-            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer);
             var data = JObject.FromObject(new ExtractToCodeBehindParams()
             {
                 Uri = new Uri("c:/Test.razor"),
@@ -78,7 +78,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             var codeDocument = CreateCodeDocument(contents);
             codeDocument.SetFileKind(FileKinds.Legacy);
 
-            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer);
             var data = JObject.FromObject(new ExtractToCodeBehindParams()
             {
                 Uri = new Uri("c:/Test.razor"),
@@ -104,7 +104,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             var contents = $"@page \"/test\"{Environment.NewLine}@code {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
 
-            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer);
             var actionParams = new ExtractToCodeBehindParams
             {
                 Uri = documentUri,
@@ -148,7 +148,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             var contents = $"@page \"/test\"{Environment.NewLine}@functions {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
 
-            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer);
             var actionParams = new ExtractToCodeBehindParams
             {
                 Uri = documentUri,
@@ -192,7 +192,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.Test.CodeActions
             var contents = $"@page \"/test\"\n@using System.Diagnostics{Environment.NewLine}@code {{ private var x = 1; }}";
             var codeDocument = CreateCodeDocument(contents);
 
-            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer, LoggerFactory);
+            var resolver = new ExtractToCodeBehindCodeActionResolver(new DefaultForegroundDispatcher(), CreateDocumentResolver(documentPath, codeDocument), FilePathNormalizer);
             var actionParams = new ExtractToCodeBehindParams
             {
                 Uri = documentUri,

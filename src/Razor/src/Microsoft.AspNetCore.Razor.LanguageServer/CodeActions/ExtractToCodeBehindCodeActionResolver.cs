@@ -56,16 +56,15 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             if (document is null)
             {
                 return null;
-            }
+            }            
 
-            var documentFileKind = document.FileKind;
-            if (!FileKinds.IsComponent(documentFileKind))
+            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
+            if (codeDocument.IsUnsupported())
             {
                 return null;
             }
 
-            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
-            if (codeDocument.IsUnsupported())
+            if (!FileKinds.IsComponent(codeDocument.GetFileKind()))
             {
                 return null;
             }
