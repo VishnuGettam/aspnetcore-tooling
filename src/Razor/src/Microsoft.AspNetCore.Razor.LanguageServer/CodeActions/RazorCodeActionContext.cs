@@ -11,17 +11,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
     {
         public RazorCodeActionContext(CodeActionParams request, RazorCodeDocument document, SourceLocation location)
         {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            if (document is null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
-            Request = request;
-            Document = document;
+            Request = request ?? throw new ArgumentNullException(nameof(request));
+            Document = document ?? throw new ArgumentNullException(nameof(document));
             Location = location;
         }
 
