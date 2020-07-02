@@ -28,25 +28,17 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         private readonly ForegroundDispatcher _foregroundDispatcher;
         private readonly DocumentResolver _documentResolver;
         private readonly FilePathNormalizer _filePathNormalizer;
-        private readonly ILogger _logger;
 
         private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
 
         public ExtractToCodeBehindCodeActionResolver(
             ForegroundDispatcher foregroundDispatcher,
             DocumentResolver documentResolver,
-            FilePathNormalizer filePathNormalizer,
-            ILoggerFactory loggerFactory)
+            FilePathNormalizer filePathNormalizer)
         {
-            if (loggerFactory is null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
             _foregroundDispatcher = foregroundDispatcher ?? throw new ArgumentNullException(nameof(foregroundDispatcher));
             _documentResolver = documentResolver ?? throw new ArgumentNullException(nameof(documentResolver));
             _filePathNormalizer = filePathNormalizer ?? throw new ArgumentNullException(nameof(filePathNormalizer));
-            _logger = loggerFactory.CreateLogger<ExtractToCodeBehindCodeActionProvider>();
         }
 
         public override string Action => LanguageServerConstants.CodeActions.ExtractToCodeBehindAction;
@@ -66,14 +58,14 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 return null;
             }
 
-            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
-            if (codeDocument.IsUnsupported())
+            var documentFileKind = document.FileKind;
+            if (!FileKinds.IsComponent(documentFileKind))
             {
                 return null;
             }
 
-            var codeDocumentFileKind = codeDocument.GetFileKind();
-            if (!FileKinds.IsComponent(codeDocumentFileKind))
+            var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
+            if (codeDocument.IsUnsupported())
             {
                 return null;
             }
@@ -191,7 +183,6 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 .GetDocumentIntermediateNode()
                 .FindDescendantNodes<IntermediateNode>()
                 .FirstOrDefault(n => n is NamespaceDeclarationIntermediateNode);
-            var namespaceName = namespaceNode?.Content ?? "Unknown";
 
             var mock = (ClassDeclarationSyntax)CSharpSyntaxFactory.ParseMemberDeclaration($"class Class {contents}");
             var @class = CSharpSyntaxFactory
@@ -200,7 +191,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 .AddMembers(mock.Members.ToArray());
 
             var @namespace = CSharpSyntaxFactory
-                .NamespaceDeclaration(CSharpSyntaxFactory.ParseName(namespaceName))
+                .NamespaceDeclaration(CSharpSyntaxFactory.ParseName(namespaceNode.Content))
                 .AddMembers(@class);
 
             var usings = FindUsings(razorCodeDocument)

@@ -51,9 +51,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             _logger.LogDebug($"Resolving action {request.Action} with data {request.Data}.");
-            _resolvers.TryGetValue(request.Action, out var resolver);
 
-            if (resolver is null)
+            if (!_resolvers.TryGetValue(request.Action, out var resolver))
             {
                 Debug.Fail($"No resolver registered for {request.Action}.");
                 return new RazorCodeActionResolutionResponse();

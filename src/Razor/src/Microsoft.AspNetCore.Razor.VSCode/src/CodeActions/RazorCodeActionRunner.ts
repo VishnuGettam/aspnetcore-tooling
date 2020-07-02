@@ -17,8 +17,8 @@ export class RazorCodeActionRunner {
         private readonly logger: RazorLogger,
     ) {}
 
-    public register() {
-        vscode.commands.registerCommand('razor/runCodeAction', (request: CodeActionResolutionRequest) => this.runCodeAction(request), this);
+    public register(): vscode.Disposable {
+        return vscode.commands.registerCommand('razor/runCodeAction', (request: CodeActionResolutionRequest) => this.runCodeAction(request), this);
     }
 
     private async runCodeAction(request: CodeActionResolutionRequest): Promise<boolean> {
