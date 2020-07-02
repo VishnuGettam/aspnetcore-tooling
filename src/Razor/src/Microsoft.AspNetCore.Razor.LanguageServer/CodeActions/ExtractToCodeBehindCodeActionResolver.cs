@@ -28,25 +28,17 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
         private readonly ForegroundDispatcher _foregroundDispatcher;
         private readonly DocumentResolver _documentResolver;
         private readonly FilePathNormalizer _filePathNormalizer;
-        private readonly ILogger _logger;
 
         private static readonly Range StartOfDocumentRange = new Range(new Position(0, 0), new Position(0, 0));
 
         public ExtractToCodeBehindCodeActionResolver(
             ForegroundDispatcher foregroundDispatcher,
             DocumentResolver documentResolver,
-            FilePathNormalizer filePathNormalizer,
-            ILoggerFactory loggerFactory)
+            FilePathNormalizer filePathNormalizer)
         {
-            if (loggerFactory is null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
             _foregroundDispatcher = foregroundDispatcher ?? throw new ArgumentNullException(nameof(foregroundDispatcher));
             _documentResolver = documentResolver ?? throw new ArgumentNullException(nameof(documentResolver));
             _filePathNormalizer = filePathNormalizer ?? throw new ArgumentNullException(nameof(filePathNormalizer));
-            _logger = loggerFactory.CreateLogger<ExtractToCodeBehindCodeActionProvider>();
         }
 
         public override string Action => LanguageServerConstants.CodeActions.ExtractToCodeBehindAction;
@@ -64,7 +56,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             if (document is null)
             {
                 return null;
-            }
+            }            
 
             var codeDocument = await document.GetGeneratedOutputAsync().ConfigureAwait(false);
             if (codeDocument.IsUnsupported())
@@ -72,8 +64,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 return null;
             }
 
-            var codeDocumentFileKind = codeDocument.GetFileKind();
-            if (!FileKinds.IsComponent(codeDocumentFileKind))
+            if (!FileKinds.IsComponent(codeDocument.GetFileKind()))
             {
                 return null;
             }

@@ -40,8 +40,8 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 return EmptyResult;
             }
 
-            var node = syntaxTree.Root.LocateOwner(change);
-            node = node.Ancestors().FirstOrDefault(n => n.Kind == SyntaxKind.RazorDirective);
+            var owner = syntaxTree.Root.LocateOwner(change);
+            var node = owner.Ancestors().FirstOrDefault(n => n.Kind == SyntaxKind.RazorDirective);
             if (node == null || !(node is RazorDirectiveSyntax directiveNode))
             {
                 return EmptyResult;
@@ -54,7 +54,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
             }
 
             // No code action if malformed
-            if (node.GetDiagnostics().Any(d => d.Severity == RazorDiagnosticSeverity.Error))
+            if (directiveNode.GetDiagnostics().Any(d => d.Severity == RazorDiagnosticSeverity.Error))
             {
                 return EmptyResult;
             }

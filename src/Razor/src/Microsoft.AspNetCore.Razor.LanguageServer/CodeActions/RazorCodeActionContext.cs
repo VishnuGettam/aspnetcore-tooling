@@ -13,9 +13,9 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
     {
         public RazorCodeActionContext(CodeActionParams request, DocumentSnapshot documentSnapshot, RazorCodeDocument codeDocument, SourceLocation location)
         {
-            Request = request;
-            DocumentSnapshot = documentSnapshot;
-            CodeDocument = codeDocument;
+            Request = request ?? throw new ArgumentNullException(nameof(request));
+            DocumentSnapshot = documentSnapshot ?? throw new ArgumentNullException(nameof(documentSnapshot));
+            CodeDocument = codeDocument ?? throw new ArgumentNullException(nameof(codeDocument));
             Location = location;
         }
 
