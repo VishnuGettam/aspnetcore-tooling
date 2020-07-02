@@ -191,6 +191,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 .GetDocumentIntermediateNode()
                 .FindDescendantNodes<IntermediateNode>()
                 .FirstOrDefault(n => n is NamespaceDeclarationIntermediateNode);
+            var namespaceName = namespaceNode?.Content ?? "Unknown";
 
             var mock = (ClassDeclarationSyntax)CSharpSyntaxFactory.ParseMemberDeclaration($"class Class {contents}");
             var @class = CSharpSyntaxFactory
@@ -199,7 +200,7 @@ namespace Microsoft.AspNetCore.Razor.LanguageServer.CodeActions
                 .AddMembers(mock.Members.ToArray());
 
             var @namespace = CSharpSyntaxFactory
-                .NamespaceDeclaration(CSharpSyntaxFactory.ParseName(namespaceNode.Content))
+                .NamespaceDeclaration(CSharpSyntaxFactory.ParseName(namespaceName))
                 .AddMembers(@class);
 
             var usings = FindUsings(razorCodeDocument)
